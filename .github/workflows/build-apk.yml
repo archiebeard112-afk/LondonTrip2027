@@ -2,14 +2,26 @@ name: Build APK
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Check signing password
+        env:
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        run: |
+          if [ -z "$SIGNING_STORE_PASSWORD" ]; then
+            echo "::error::Add the SIGNING_STORE_PASSWORD secret under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
 
       - uses: actions/setup-java@v4
         with:
@@ -20,10 +32,24 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build debug APK
-        run: gradle assembleDebug --no-daemon
+      - name: Build signed APK
+        env:
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+        run: |
+          gradle assembleRelease --no-daemon -PversionCode=${{ github.run_number }}
+          cp app/build/outputs/apk/release/app-release.apk london-trip.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: london-trip-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: london-trip.apk
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ github.run_number }}" london-trip.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "London Trip v${{ github.run_number }}" \
+            --notes "Built from commit ${GITHUB_SHA::7}."

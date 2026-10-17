@@ -458,6 +458,68 @@ main { padding-block: 22px 120px; }
 .rate p { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
 .rate a { color: var(--accent); font-weight: 700; }
 
+/* App updates (shown only inside the Android app) */
+.topside { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.updbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1.5px solid var(--accent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.updbtn svg { width: 14px; height: 14px; }
+.updbtn[disabled] { opacity: 0.55; }
+.toast {
+  position: fixed;
+  z-index: 25;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 16px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+.toast p { flex: 1; min-width: 0; margin: 0; font-size: 14px; line-height: 1.35; }
+.toast .tbtn {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+.toast .tclose {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 @media (max-width: 380px) {
   .top h1 { font-size: 34px; }
   .stop { grid-template-columns: 4.1rem minmax(0, 1fr); }
@@ -478,13 +540,25 @@ main { padding-block: 22px 120px; }
         <h1>London</h1>
         <p class="dates">Feb 20 to 28, 2027 &middot; Covent Garden</p>
       </div>
-      <div class="count" id="count">&nbsp;</div>
+      <div class="topside">
+        <div class="count" id="count">&nbsp;</div>
+        <button class="updbtn" id="upd" type="button" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="updLabel">Update</span>
+        </button>
+      </div>
     </div>
     <nav class="strip" id="strip" aria-label="Trip days"></nav>
   </div>
 </header>
 
 <main class="wrap" id="panel" aria-live="polite"></main>
+
+<div class="toast" id="toast" role="status" hidden>
+  <p id="toastMsg"></p>
+  <button class="tbtn" id="toastAct" type="button" hidden>Install</button>
+  <button class="tclose" id="toastClose" type="button" aria-label="Dismiss">&times;</button>
+</div>
 
 <button class="fab" id="fab" type="button" aria-haspopup="dialog" aria-expanded="false">
   <span>&pound; &rarr; $</span><small>Convert</small>
@@ -857,6 +931,44 @@ main { padding-block: 22px 120px; }
     if (r > 0) { cv.rates[cv.cur] = r; save('ldn.rates', cv.rates); }
     calc();
   });
+
+  // App updates: the Android app exposes window.AndroidApp; on the web the button stays hidden.
+  var app = window.AndroidApp;
+  var updBtn = $('upd'), toast = $('toast'), toastMsg = $('toastMsg'), toastAct = $('toastAct');
+  var toastTimer = null;
+  function showToast(msg, withInstall, sticky) {
+    clearTimeout(toastTimer);
+    toastMsg.textContent = msg;
+    toastAct.hidden = !withInstall;
+    toast.hidden = false;
+    if (!sticky) toastTimer = setTimeout(function () { toast.hidden = true; }, 6000);
+  }
+  function setBusy(on, label) {
+    updBtn.disabled = on;
+    $('updLabel').textContent = label || 'Update';
+  }
+  if (app && typeof app.checkForUpdate === 'function') {
+    updBtn.hidden = false;
+    try { updBtn.title = 'Installed version v' + app.getVersion(); } catch (e) { /* ignore */ }
+    updBtn.addEventListener('click', function () {
+      setBusy(true, 'Checking');
+      showToast('Checking GitHub for a new version…', false, true);
+      app.checkForUpdate();
+    });
+    toastAct.addEventListener('click', function () {
+      toastAct.hidden = true;
+      setBusy(true, 'Updating');
+      app.installUpdate();
+    });
+  }
+  $('toastClose').addEventListener('click', function () { toast.hidden = true; });
+  window.onUpdateStatus = function (state, msg) {
+    if (state === 'available') { setBusy(false); showToast(msg, true, true); }
+    else if (state === 'downloading') { setBusy(true, 'Updating'); showToast(msg, false, true); }
+    else if (state === 'installing') { setBusy(false); showToast(msg, false, false); }
+    else if (state === 'permission') { setBusy(false); showToast(msg, true, true); }
+    else { setBusy(false); showToast(msg, false, state === 'error'); }
+  };
 
   // Start
   buildStrip();

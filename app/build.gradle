@@ -2,6 +2,10 @@ plugins {
     id 'com.android.application'
 }
 
+// The build number from GitHub Actions becomes the app version, so each release is newer than the last.
+def buildNumber = (project.findProperty('versionCode') ?: '1').toString().toInteger()
+def storePw = System.getenv('SIGNING_STORE_PASSWORD')
+
 android {
     namespace 'com.londontrip.guide'
     compileSdk 34
@@ -10,13 +14,27 @@ android {
         applicationId 'com.londontrip.guide'
         minSdk 26
         targetSdk 34
-        versionCode 1
-        versionName '1.0'
+        versionCode buildNumber
+        versionName "1.${buildNumber}"
+    }
+
+    signingConfigs {
+        release {
+            if (storePw) {
+                storeFile rootProject.file('signing/release.jks')
+                storePassword storePw
+                keyAlias 'londontrip'
+                keyPassword storePw
+            }
+        }
     }
 
     buildTypes {
         release {
             minifyEnabled false
+            if (storePw) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
