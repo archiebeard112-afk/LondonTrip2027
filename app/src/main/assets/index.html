@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>html,body{margin:0}[hidden]{display:none!important}</style>
+<title>London Trip Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Overpass:wght@400;600;700&family=Overpass+Mono:wght@500&display=swap">
+<style>
+/* Layout: sticky header with a scrolling day strip over a single-column timeline; each day wears a rail-map line color; a floating button opens a currency sheet. */
+:root {
+  --bg: #EDF0F5;
+  --surface: #FFFFFF;
+  --ink: #0D1B2E;
+  --muted: #56677F;
+  --line: #D5DCE8;
+  --accent: #0019A8;
+  --accent-ink: #FFFFFF;
+  --soft: #E3E9F7;
+  --signal: #B3162B;
+  --ok: #1F7A4C;
+  --scrim: rgba(5, 10, 20, 0.55);
+  --f-display: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
+  --f-body: 'Overpass', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'Overpass Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0A1322;
+    --surface: #111D33;
+    --ink: #E8EEF8;
+    --muted: #95A5BE;
+    --line: #24334F;
+    --accent: #7B96FF;
+    --accent-ink: #0A1322;
+    --soft: #182645;
+    --signal: #FF7A8A;
+    --ok: #5CCB92;
+    --scrim: rgba(0, 0, 0, 0.65);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0A1322;
+  --surface: #111D33;
+  --ink: #E8EEF8;
+  --muted: #95A5BE;
+  --line: #24334F;
+  --accent: #7B96FF;
+  --accent-ink: #0A1322;
+  --soft: #182645;
+  --signal: #FF7A8A;
+  --ok: #5CCB92;
+  --scrim: rgba(0, 0, 0, 0.65);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 10;
+  background: var(--bg);
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.wrap {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* Header */
+.top {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.top-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+}
+.top h1 {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.top .dates {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.count {
+  flex: 0 0 auto;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--soft);
+  color: var(--accent);
+  white-space: nowrap;
+}
+.strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 12px 0 12px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+.strip::-webkit-scrollbar { display: none; }
+.day {
+  flex: 0 0 auto;
+  width: 54px;
+  padding: 7px 0 0;
+  border: 1px solid var(--line);
+  border-bottom: 5px solid var(--c);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: center;
+  cursor: pointer;
+  scroll-snap-align: center;
+}
+.day .dow {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.day .num {
+  display: block;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1.1;
+  padding-bottom: 4px;
+}
+.day[aria-current="true"] {
+  background: var(--c);
+  border-color: var(--c);
+  color: #fff;
+}
+.day[aria-current="true"] .dow { color: rgba(255, 255, 255, 0.85); }
+
+/* Day panel */
+main { padding-block: 22px 120px; }
+.kicker {
+  margin: 0;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.dayhead h2 {
+  margin: 4px 0 8px;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+.lede {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--muted);
+}
+.progress {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c);
+}
+
+.stops {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+}
+.stop {
+  display: grid;
+  grid-template-columns: 4.6rem minmax(0, 1fr);
+  column-gap: 0;
+  padding-top: 18px;
+}
+.time {
+  padding-top: 2px;
+  font-family: var(--f-mono);
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.body {
+  position: relative;
+  min-width: 0;
+  padding: 0 0 18px 18px;
+  border-left: 3px solid var(--c);
+  border-bottom: 1px solid transparent;
+}
+.stop:last-child .body { padding-bottom: 6px; border-left-color: transparent; }
+.stop:last-child .body::before { left: -8px; }
+.body::before {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: 4px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 3px solid var(--c);
+}
+.stop.done .body::before { background: var(--c); }
+.titlerow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.titlerow h3 {
+  margin: 0;
+  font-family: var(--f-body);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+.stop.done h3 { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.tick {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  margin: -4px -4px 0 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+}
+.tick svg { width: 16px; height: 16px; }
+.tick[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: var(--surface); }
+.note { margin: 4px 0 0; color: var(--muted); font-size: 15px; max-width: 58ch; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: var(--soft);
+  color: var(--accent);
+}
+.tag.alert { background: transparent; border: 1.5px solid var(--signal); color: var(--signal); padding: 1.5px 6px; }
+.tag.good { background: transparent; border: 1.5px solid var(--ok); color: var(--ok); padding: 1.5px 6px; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.go {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.go svg { width: 16px; height: 16px; flex: 0 0 auto; }
+.go:active { transform: translateY(1px); }
+
+.home {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.home p { margin: 0; font-size: 14px; color: var(--muted); }
+.go.alt { background: transparent; color: var(--accent); border: 2px solid var(--accent); }
+
+/* Currency */
+.fab {
+  position: fixed;
+  z-index: 20;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 52px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 26px;
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+.fab small { font-family: var(--f-body); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.sheetwrap {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.scrim { position: absolute; inset: 0; background: var(--scrim); }
+.sheet {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  max-height: 92%;
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: 18px 18px 0 0;
+  padding-top: 18px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+}
+.sheethead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.sheethead h2 {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 28px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.close {
+  width: 44px;
+  height: 44px;
+  margin-right: -10px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 2px solid var(--accent); border-radius: 10px; overflow: hidden; }
+.seg button {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+.conv { margin-top: 18px; display: grid; gap: 10px; }
+.field label, .rate label, .outlabel { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.inputbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 56px;
+  padding: 0 14px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.inputbox:focus-within { border-color: var(--accent); }
+.inputbox span { font-family: var(--f-display); font-weight: 700; font-size: 28px; color: var(--muted); }
+.inputbox input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--f-mono);
+  font-size: 24px;
+  outline: none;
+}
+.swaprow { display: flex; align-items: center; gap: 12px; color: var(--muted); }
+.swaprow hr { flex: 1; border: 0; border-top: 1px solid var(--line); margin: 0; }
+.swap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.swap svg { width: 16px; height: 16px; }
+.result {
+  display: block;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 52px;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.chip {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--f-mono);
+  font-size: 14px;
+  cursor: pointer;
+}
+.rate { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.rate .inputbox { height: 48px; }
+.rate .inputbox input { font-size: 20px; }
+.rate p { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+.rate a { color: var(--accent); font-weight: 700; }
+
+@media (max-width: 380px) {
+  .top h1 { font-size: 34px; }
+  .stop { grid-template-columns: 4.1rem minmax(0, 1fr); }
+  .result { font-size: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <div>
+        <h1>London</h1>
+        <p class="dates">Feb 20 to 28, 2027 &middot; Covent Garden</p>
+      </div>
+      <div class="count" id="count">&nbsp;</div>
+    </div>
+    <nav class="strip" id="strip" aria-label="Trip days"></nav>
+  </div>
+</header>
+
+<main class="wrap" id="panel" aria-live="polite"></main>
+
+<button class="fab" id="fab" type="button" aria-haspopup="dialog" aria-expanded="false">
+  <span>&pound; &rarr; $</span><small>Convert</small>
+</button>
+
+<div class="sheetwrap" id="sheetwrap" hidden>
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet wrap" role="dialog" aria-modal="true" aria-labelledby="cvTitle">
+    <div class="sheethead">
+      <h2 id="cvTitle">Currency</h2>
+      <button class="close" id="close" type="button" aria-label="Close converter">&times;</button>
+    </div>
+
+    <div class="conv">
+      <div class="field">
+        <label for="amount" id="inLabel">Pounds</label>
+        <div class="inputbox"><span id="inSym">&pound;</span><input id="amount" type="text" inputmode="decimal" autocomplete="off" value="20"></div>
+      </div>
+      <div class="swaprow">
+        <hr>
+        <button class="swap" id="swap" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Swap direction
+        </button>
+        <hr>
+      </div>
+      <div>
+        <span class="outlabel" id="outLabel">US dollars</span>
+        <output class="result" id="out" for="amount rate">&mdash;</output>
+      </div>
+      <div class="chips" id="chips" aria-label="Quick amounts"></div>
+    </div>
+
+    <div class="rate">
+      <label for="rate" id="rateLabel">1 &pound; =</label>
+      <div class="inputbox"><span>$</span><input id="rate" type="text" inputmode="decimal" autocomplete="off" value="1.30"></div>
+      <p>These are rough starting rates, so type in today's rate before you go. <a href="https://www.google.com/search?q=GBP+to+USD" target="_blank" rel="noopener">Check the live rate</a>. Cards use your bank's rate and may add a foreign transaction fee.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var HOTEL = 'hub by Premier Inn London Covent Garden';
+
+  var DAYS = [
+    { t: 'Arrival and Covent Garden', c: '#0019A8',
+      lede: 'The Piccadilly Line runs straight from Heathrow to Covent Garden. Tap in and out with a contactless card or phone.',
+      stops: [
+        { time: '1:00 PM', title: 'Land at Heathrow', note: 'Clear customs and follow the signs for the Underground.' },
+        { time: '2:00 PM', title: 'Piccadilly Line to Covent Garden', note: 'Direct, about 50 minutes.', m: 'transit',
+          places: [{ q: 'Covent Garden Underground Station, London' }] },
+        { time: '3:15 PM', title: 'Check in at the hotel', note: 'hub by Premier Inn London Covent Garden, a 3-minute walk from the station.', m: 'walking',
+          places: [{ q: HOTEL }] },
+        { time: '4:00 PM', title: 'Pastries and Seven Dials Market', note: 'Pastries at Sourdough Sophia or food stalls at Seven Dials Market, then street performers in the Covent Garden plaza.',
+          places: [{ l: 'Seven Dials Market', q: 'Seven Dials Market, London' }, { l: 'Sourdough Sophia', q: 'Sourdough Sophia, Covent Garden, London' }] },
+        { time: '6:30 PM', title: "Dinner at Mr Fogg's Market Tavern", note: 'A cozy, historic-feeling pub dinner near the hotel.',
+          places: [{ q: "Mr Fogg's Market Tavern, London" }] }
+      ] },
+    { t: 'Royal London', c: '#DC241F',
+      lede: 'Westminster Abbey is closed to sightseeing on Sundays, so it moved to Tuesday. Today is palace, river and a roast.',
+      stops: [
+        { time: '9:30 AM', title: 'Walk to Buckingham Palace', note: "Go through St James's Park to the palace and the Victoria Memorial.", m: 'walking',
+          places: [{ q: 'Buckingham Palace, London' }] },
+        { time: '11:30 AM', title: 'Big Ben and Westminster Bridge', note: 'Photos of Big Ben and the Houses of Parliament from the bridge.', m: 'walking',
+          places: [{ q: 'Westminster Bridge, London' }] },
+        { time: '1:00 PM', title: 'Sunday roast at the Lamb & Flag', note: 'Historic pub on Rose Street. Sunday roasts fill up, so go early.', m: 'transit', tags: ['Go early'],
+          places: [{ q: 'Lamb & Flag, Rose Street, Covent Garden, London' }] },
+        { time: '3:00 PM', title: 'Churchill War Rooms', note: 'Indoors, so a good plan if it rains. Timed entry.', m: 'transit', tags: ['!Book ahead'],
+          places: [{ q: 'Churchill War Rooms, London' }] },
+        { time: '5:30 PM', title: 'South Bank walk and London Eye', note: 'Cross the river and walk along it as the Eye lights up.', m: 'walking',
+          places: [{ q: 'London Eye, London' }] },
+        { time: '7:00 PM', title: 'Dinner at Dishoom Covent Garden', note: 'Walk-in queues are common. Larger groups should book.', m: 'transit',
+          places: [{ q: 'Dishoom Covent Garden, London' }] }
+      ] },
+    { t: 'Tower and Borough Market', c: '#00782A',
+      lede: 'The Tower of London opens at 10 AM on Mondays in winter. Confirm the 2027 hours before you go.',
+      stops: [
+        { time: '9:15 AM', title: 'Tube to Tower Hill', note: 'Head east on the Underground.', m: 'transit',
+          places: [{ q: 'Tower Hill Underground Station, London' }] },
+        { time: '9:45 AM', title: 'Tower of London', note: 'Crown Jewels first, then the White Tower.', m: 'walking', tags: ['!Opens 10 AM'],
+          places: [{ q: 'Tower of London' }] },
+        { time: '12:30 PM', title: 'Borough Market lunch', note: 'Walk over Tower Bridge. Try the Bread Ahead doughnuts or Padella pasta.', m: 'walking',
+          places: [{ q: 'Borough Market, London' }] },
+        { time: '2:30 PM', title: 'South Bank stroll', note: 'Walk west past Shakespeare’s Globe and the Tate Modern. The Tate is free and indoors if the weather turns.', m: 'walking',
+          places: [{ l: 'Shakespeare’s Globe', q: "Shakespeare's Globe, London" }, { l: 'Tate Modern', q: 'Tate Modern, London' }] },
+        { time: '6:30 PM', title: 'Dinner at Café Murano', note: 'Italian in Covent Garden.', m: 'transit', tags: ['Booking advised'],
+          places: [{ q: 'Cafe Murano Covent Garden, London' }] }
+      ] },
+    { t: 'Abbey, Horse Guards and Soho', c: '#9B0056',
+      lede: 'The Abbey first thing, then Horse Guards a short walk away. Hyde Park is optional.',
+      stops: [
+        { time: '9:30 AM', title: 'Westminster Abbey', note: 'Arrive at opening and allow about 2 hours. It can close at short notice for services and events.', m: 'transit', tags: ['!Book ahead'],
+          places: [{ q: 'Westminster Abbey, London' }] },
+        { time: '11:45 AM', title: 'Horse Guards and the Household Cavalry Museum', note: 'See the horses through the stable windows.', m: 'walking',
+          places: [{ q: 'Household Cavalry Museum, Horse Guards, London' }] },
+        { time: '12:30 PM', title: 'Soho and Chinatown lunch', note: 'Dumplings or casual bites.', m: 'walking',
+          places: [{ q: 'Chinatown, London' }] },
+        { time: '2:30 PM', title: 'Hyde Park walk', note: 'Rotten Row and the royal park grounds. In bad weather, swap in the National Gallery, which is free.', m: 'transit', tags: ['Optional'],
+          places: [{ l: 'Hyde Park', q: 'Hyde Park, London' }, { l: 'National Gallery', q: 'National Gallery, London' }] },
+        { time: '6:30 PM', title: 'Dinner at Flat Iron', note: 'Steak, and the salted caramel ice cream.', m: 'transit',
+          places: [{ q: 'Flat Iron Covent Garden, London' }] }
+      ] },
+    { t: 'British Museum and Rowan Live', c: '#0077B6',
+      lede: 'Rowan Live is at 7:30 PM. Everything else today bends around it.',
+      stops: [
+        { time: '9:30 AM', title: 'British Museum', note: 'A 10-minute walk north of the hotel. Free entry. The Rosetta Stone is the headline.', m: 'walking',
+          places: [{ q: 'British Museum, London' }] },
+        { time: '12:15 PM', title: 'Soup dumplings at Din Tai Fung', note: 'Hand-made dumplings in Covent Garden.', m: 'walking',
+          places: [{ q: 'Din Tai Fung Covent Garden, London' }] },
+        { time: '1:30 PM', title: 'Rest at the hotel', note: 'Relax, unwind and get dressed up.' },
+        { time: '5:30 PM', title: 'Pre-theatre dinner at Rules', note: 'Classic British dining on Maiden Lane. Be seated by 5:30.', m: 'walking', tags: ['!Book ahead'],
+          places: [{ q: 'Rules Restaurant, Maiden Lane, London' }] },
+        { time: '7:30 PM', title: 'Rowan Live', note: 'Gillian Lynne Theatre on Drury Lane. Walk over and be there by 7:00.', m: 'walking', tags: ['+Tickets booked'],
+          places: [{ q: 'Gillian Lynne Theatre, Drury Lane, London' }] }
+      ] },
+    { t: 'South Kensington and Harrods', c: '#894E24',
+      lede: 'Two museum options in South Kensington. Pick one and keep the other as a backup.',
+      stops: [
+        { time: '9:30 AM', title: 'Piccadilly Line to South Kensington', note: 'About 15 minutes from Covent Garden.', m: 'transit',
+          places: [{ q: 'South Kensington Underground Station, London' }] },
+        { time: '10:00 AM', title: 'Museum morning', note: 'The V&A or the Natural History Museum. General entry to both is free.', m: 'walking',
+          places: [{ l: 'V&A', q: 'Victoria and Albert Museum, London' }, { l: 'Natural History Museum', q: 'Natural History Museum, London' }] },
+        { time: '1:15 PM', title: 'Harrods Food Halls', note: 'Walk up through Knightsbridge for sweet treats and luxury displays.', m: 'walking',
+          places: [{ q: 'Harrods, Knightsbridge, London' }] },
+        { time: '4:00 PM', title: 'Ride back to Covent Garden', note: 'Piccadilly Line.', m: 'transit',
+          places: [{ q: 'Covent Garden Underground Station, London' }] },
+        { time: '6:30 PM', title: 'Dinner at Hawksmoor Covent Garden', note: 'Steak near the hotel.', m: 'transit', tags: ['!Book ahead'],
+          places: [{ q: 'Hawksmoor Covent Garden, London' }] }
+      ] },
+    { t: 'St Paul’s and the Ripper tour', c: '#6950A1',
+      lede: 'The tour runs after dark and mostly outdoors, so dress warm.',
+      stops: [
+        { time: '9:30 AM', title: 'St Paul’s Cathedral', note: 'Tube east, then climb to the dome galleries for city views.', m: 'transit',
+          places: [{ q: "St Paul's Cathedral, London" }] },
+        { time: '12:15 PM', title: 'Leadenhall Market', note: 'Victorian covered market and a Harry Potter filming location. Pub lunch or pie and mash.', m: 'walking',
+          places: [{ q: 'Leadenhall Market, London' }] },
+        { time: '2:00 PM', title: 'Explore the City', note: 'Relaxed window shopping or a wander through the financial district.' },
+        { time: '5:00 PM', title: 'Dinner at Tayyabs', note: 'Punjabi in Whitechapel, near the tour start.', m: 'transit', tags: ['Booking advised'],
+          places: [{ q: 'Tayyabs, Fieldgate Street, Whitechapel, London' }] },
+        { time: '7:00 PM', title: 'Jack the Ripper evening tour', note: 'Meet near Aldgate East or Tower Hill. Check your booking email for the exact spot.', m: 'walking', tags: ['!Book ahead'],
+          places: [{ l: 'Aldgate East', q: 'Aldgate East Underground Station, London' }, { l: 'Tower Hill', q: 'Tower Hill Underground Station, London' }] },
+        { time: '9:30 PM', title: 'Tube back to Covent Garden', note: 'A quick ride back to the hotel.', m: 'transit',
+          places: [{ q: 'Covent Garden Underground Station, London' }] }
+      ] },
+    { t: 'Parks and a farewell dinner', c: '#C25A00',
+      lede: 'A light day with a flexible afternoon for souvenirs and favorites.',
+      stops: [
+        { time: '9:30 AM', title: 'Regent’s Park or Primrose Hill', note: 'A quiet morning walk, or climb Primrose Hill for the skyline.', m: 'transit',
+          places: [{ l: 'Regent’s Park', q: "Regent's Park, London" }, { l: 'Primrose Hill', q: 'Primrose Hill, London' }] },
+        { time: '12:00 PM', title: 'Flexible afternoon', note: 'Pick up souvenirs or revisit a favorite spot from the week.' },
+        { time: '6:30 PM', title: 'Farewell dinner at J Sheekey', note: 'Seafood in St Martin’s Court.', m: 'transit', tags: ['!Book ahead'],
+          places: [{ q: "J Sheekey, St Martin's Court, London" }] }
+      ] },
+    { t: 'Departure', c: '#5C6670',
+      lede: 'This plan leaves the hotel by 10:00 AM. Work backward from your actual flight time.',
+      stops: [
+        { time: '8:30 AM', title: 'Full English breakfast at The Delaunay', note: 'On Aldwych, a short walk from the hotel.', m: 'walking',
+          places: [{ q: 'The Delaunay, Aldwych, London' }] },
+        { time: '9:45 AM', title: 'Check out', note: 'hub by Premier Inn London Covent Garden.' },
+        { time: '10:00 AM', title: 'Piccadilly Line to Heathrow', note: 'Walk to Covent Garden Station, tap in, and ride straight to the airport.', m: 'transit',
+          places: [{ l: 'Heathrow', q: 'Heathrow Airport, London' }] }
+      ] }
+  ];
+
+  var START = new Date(2027, 1, 20);
+  var ICON_GO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4.5 21l7.5-4 7.5 4z" fill="currentColor"/></svg>';
+  var ICON_OK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  // Storage helpers: everything works without them.
+  function load(key, fallback) {
+    try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
+  }
+  function save(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* ignore */ }
+  }
+
+  function el(tag, props) {
+    var n = document.createElement(tag);
+    var p = props || {};
+    Object.keys(p).forEach(function (k) {
+      var v = p[k];
+      if (k === 'class') n.className = v;
+      else if (k === 'text') n.textContent = v;
+      else if (k === 'html') n.innerHTML = v;
+      else if (k.indexOf('on') === 0) n.addEventListener(k.slice(2), v);
+      else if (v === true) n.setAttribute(k, '');
+      else if (v !== false && v != null) n.setAttribute(k, v);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var kids = [].concat(arguments[i]);
+      for (var j = 0; j < kids.length; j++) {
+        var c = kids[j];
+        if (c == null || c === false) continue;
+        n.appendChild(c.nodeType ? c : document.createTextNode(c));
+      }
+    }
+    return n;
+  }
+
+  function dirUrl(q, mode) {
+    return 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(q) + '&travelmode=' + (mode || 'walking');
+  }
+  function dateOf(i) { return new Date(2027, 1, 20 + i); }
+  function dayMs(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); }
+
+  var done = load('ldn.done', {});
+  var current = 0;
+  var strip = document.getElementById('strip');
+  var panel = document.getElementById('panel');
+  var pills = [];
+
+  function buildStrip() {
+    DAYS.forEach(function (d, i) {
+      var dt = dateOf(i);
+      var b = el('button', { type: 'button', class: 'day', 'aria-label': 'Day ' + (i + 1) + ', ' + dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }), onclick: function () { show(i, true); } },
+        el('span', { class: 'dow', text: dt.toLocaleDateString('en-US', { weekday: 'short' }) }),
+        el('span', { class: 'num', text: String(dt.getDate()) }));
+      b.style.setProperty('--c', d.c);
+      pills.push(b);
+      strip.appendChild(b);
+    });
+  }
+
+  function countText() {
+    var today = dayMs(new Date());
+    var diff = Math.round((dayMs(START) - today) / 86400000);
+    if (diff > 0) return diff + (diff === 1 ? ' day to go' : ' days to go');
+    var n = -diff;
+    if (n >= 0 && n < DAYS.length) return 'Day ' + (n + 1) + ' today';
+    return 'Trip complete';
+  }
+
+  function tagEl(raw) {
+    var kind = '';
+    var text = raw;
+    if (raw.charAt(0) === '!') { kind = ' alert'; text = raw.slice(1); }
+    else if (raw.charAt(0) === '+') { kind = ' good'; text = raw.slice(1); }
+    return el('span', { class: 'tag' + kind, text: text });
+  }
+
+  function show(i, userTap) {
+    current = i;
+    save('ldn.day', i);
+    var d = DAYS[i];
+    var dt = dateOf(i);
+    pills.forEach(function (p, k) {
+      if (k === i) p.setAttribute('aria-current', 'true'); else p.removeAttribute('aria-current');
+    });
+    if (userTap) {
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      try { pills[i].scrollIntoView({ inline: 'center', block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }); } catch (e) { /* ignore */ }
+      window.scrollTo(0, 0);
+    }
+    panel.style.setProperty('--c', d.c);
+    panel.textContent = '';
+
+    var count = d.stops.filter(function (s, k) { return done[i + '-' + k]; }).length;
+    var progress = el('p', { class: 'progress', text: count + ' of ' + d.stops.length + ' done' });
+
+    panel.appendChild(el('div', { class: 'dayhead' },
+      el('p', { class: 'kicker', text: 'DAY ' + (i + 1) + ' · ' + dt.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }).toUpperCase() }),
+      el('h2', { text: d.t }),
+      el('p', { class: 'lede', text: d.lede }),
+      progress));
+
+    var list = el('ol', { class: 'stops' });
+    d.stops.forEach(function (s, k) {
+      var key = i + '-' + k;
+      var li = el('li', { class: 'stop' + (done[key] ? ' done' : '') });
+      var tick = el('button', { type: 'button', class: 'tick', 'aria-pressed': done[key] ? 'true' : 'false', 'aria-label': 'Mark done: ' + s.title, html: ICON_OK,
+        onclick: function () {
+          done[key] = !done[key];
+          if (!done[key]) delete done[key];
+          save('ldn.done', done);
+          li.classList.toggle('done', !!done[key]);
+          tick.setAttribute('aria-pressed', done[key] ? 'true' : 'false');
+          var n = d.stops.filter(function (x, z) { return done[i + '-' + z]; }).length;
+          progress.textContent = n + ' of ' + d.stops.length + ' done';
+        } });
+      var body = el('div', { class: 'body' },
+        el('div', { class: 'titlerow' }, el('h3', { text: s.title }), tick),
+        s.note ? el('p', { class: 'note', text: s.note }) : null,
+        s.tags && s.tags.length ? el('div', { class: 'tags' }, s.tags.map(tagEl)) : null);
+      if (s.places && s.places.length) {
+        var many = s.places.length > 1;
+        body.appendChild(el('div', { class: 'actions' }, s.places.map(function (p) {
+          return el('a', { class: 'go', href: dirUrl(p.q, s.m), target: '_blank', rel: 'noopener', 'aria-label': 'Directions to ' + (p.l || s.title) },
+            el('span', { html: ICON_GO, style: 'display:inline-flex' }),
+            many ? 'Directions: ' + p.l : 'Directions');
+        })));
+      }
+      li.appendChild(el('div', { class: 'time', text: s.time }));
+      li.appendChild(body);
+      list.appendChild(li);
+    });
+    panel.appendChild(list);
+
+    panel.appendChild(el('div', { class: 'home' },
+      el('p', { text: 'Lost or done for the day?' }),
+      el('a', { class: 'go alt', href: dirUrl(HOTEL, 'transit'), target: '_blank', rel: 'noopener' },
+        el('span', { html: ICON_GO, style: 'display:inline-flex' }), 'Directions to the hotel')));
+  }
+
+  // Currency converter
+  var SYM = { GBP: '£', USD: '$' };
+  var NAME = { GBP: 'Pounds', USD: 'US dollars' };
+  var cv = { cur: 'GBP', toUsd: true, amount: '20', rates: load('ldn.rates', { GBP: 1.30 }) };
+  var QUICK = [5, 10, 20, 50, 100];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var fab = $('fab'), wrapEl = $('sheetwrap'), amountEl = $('amount'), rateEl = $('rate'), outEl = $('out');
+
+  function money(n, cur) {
+    try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(n); }
+    catch (e) { return SYM[cur] + n.toFixed(2); }
+  }
+  function parseNum(s) {
+    var n = parseFloat(String(s).replace(/,/g, ''));
+    return isFinite(n) && n >= 0 ? n : NaN;
+  }
+  function calc() {
+    var amt = parseNum(cv.amount);
+    var rate = cv.rates[cv.cur];
+    if (isNaN(amt) || !rate || rate <= 0) { outEl.textContent = '—'; return; }
+    var to = cv.toUsd ? 'USD' : cv.cur;
+    outEl.textContent = money(cv.toUsd ? amt * rate : amt / rate, to);
+  }
+  function renderCv() {
+    var from = cv.toUsd ? cv.cur : 'USD';
+    var to = cv.toUsd ? 'USD' : cv.cur;
+    $('inLabel').textContent = NAME[from];
+    $('inSym').textContent = SYM[from];
+    $('outLabel').textContent = NAME[to];
+    $('rateLabel').textContent = '1 ' + SYM[cv.cur] + ' = (US dollars)';
+    rateEl.value = String(cv.rates[cv.cur]);
+    fab.firstElementChild.textContent = SYM[cv.cur] + ' → $';
+    var chips = $('chips');
+    chips.textContent = '';
+    QUICK.forEach(function (n) {
+      chips.appendChild(el('button', { type: 'button', class: 'chip', text: SYM[from] + n, onclick: function () {
+        cv.amount = String(n); amountEl.value = cv.amount; calc();
+      } }));
+    });
+    calc();
+  }
+  function openSheet() {
+    wrapEl.hidden = false;
+    fab.setAttribute('aria-expanded', 'true');
+    renderCv();
+    amountEl.focus();
+    try { amountEl.select(); } catch (e) { /* ignore */ }
+  }
+  function closeSheet() {
+    wrapEl.hidden = true;
+    fab.setAttribute('aria-expanded', 'false');
+    fab.focus();
+  }
+
+  fab.addEventListener('click', openSheet);
+  $('close').addEventListener('click', closeSheet);
+  $('scrim').addEventListener('click', closeSheet);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !wrapEl.hidden) closeSheet(); });
+  $('swap').addEventListener('click', function () { cv.toUsd = !cv.toUsd; renderCv(); });
+  amountEl.addEventListener('input', function () { cv.amount = amountEl.value; calc(); });
+  rateEl.addEventListener('input', function () {
+    var r = parseNum(rateEl.value);
+    if (r > 0) { cv.rates[cv.cur] = r; save('ldn.rates', cv.rates); }
+    calc();
+  });
+
+  // Start
+  buildStrip();
+  $('count').textContent = countText();
+  var todayIdx = Math.round((dayMs(new Date()) - dayMs(START)) / 86400000);
+  var start = (todayIdx >= 0 && todayIdx < DAYS.length) ? todayIdx : load('ldn.day', 0);
+  if (typeof start !== 'number' || start < 0 || start >= DAYS.length) start = 0;
+  show(start, false);
+  renderCv();
+  try { pills[start].scrollIntoView({ inline: 'center', block: 'nearest' }); window.scrollTo(0, 0); } catch (e) { /* ignore */ }
+})();
+</script>
+
+</body>
+</html>
