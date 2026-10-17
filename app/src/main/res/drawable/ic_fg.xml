@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- City of London flag: red St George's cross with a red sword in the upper hoist quarter. -->
+<!-- Union Jack, cropped square. The blue field comes from @color/icon_bg. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#CE1124" android:pathData="M49,0 L59,0 L59,108 L49,108 Z" />
-    <path android:fillColor="#CE1124" android:pathData="M0,49 L108,49 L108,59 L0,59 Z" />
-    <path android:fillColor="#CE1124" android:pathData="M38,27 L39.6,30 L39.6,41 L43.5,41 L43.5,43.2 L39,43.2 L39,46 A1.7,1.7 0 1,1 37,46 L37,43.2 L32.5,43.2 L32.5,41 L36.4,41 L36.4,30 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M59.09,48.91 L-4.55,-14.73 L-14.73,-4.55 L48.91,59.09 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M59.09,59.09 L122.73,-4.55 L112.55,-14.73 L48.91,48.91 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M48.91,59.09 L112.55,122.73 L122.73,112.55 L59.09,48.91 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M48.91,48.91 L-14.73,112.55 L-4.55,122.73 L59.09,59.09 Z" />
+    <path android:fillColor="#C8102E" android:pathData="M54.00,54.00 L-9.64,-9.64 L-13.03,-6.25 L50.61,57.39 Z" />
+    <path android:fillColor="#C8102E" android:pathData="M54.00,54.00 L117.64,-9.64 L114.25,-13.03 L50.61,50.61 Z" />
+    <path android:fillColor="#C8102E" android:pathData="M54.00,54.00 L117.64,117.64 L121.03,114.25 L57.39,50.61 Z" />
+    <path android:fillColor="#C8102E" android:pathData="M54.00,54.00 L-9.64,117.64 L-6.25,121.03 L57.39,57.39 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M42.00,0.00 L66.00,0.00 L66.00,108.00 L42.00,108.00 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M0.00,42.00 L108.00,42.00 L108.00,66.00 L0.00,66.00 Z" />
+    <path android:fillColor="#C8102E" android:pathData="M46.80,0.00 L61.20,0.00 L61.20,108.00 L46.80,108.00 Z" />
+    <path android:fillColor="#C8102E" android:pathData="M0.00,46.80 L108.00,46.80 L108.00,61.20 L0.00,61.20 Z" />
 </vector>
