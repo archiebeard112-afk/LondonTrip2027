@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- City of London flag: red St George's cross with a red sword in the upper hoist quarter. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFF"
-        android:fillType="evenOdd"
-        android:pathData="M54,28 C43,28 34,36.5 34,47 C34,61 54,80 54,80 C54,80 74,61 74,47 C74,36.5 65,28 54,28 Z M54,40 A7,7 0 1,0 54.01,40 Z" />
+    <path android:fillColor="#CE1124" android:pathData="M49,0 L59,0 L59,108 L49,108 Z" />
+    <path android:fillColor="#CE1124" android:pathData="M0,49 L108,49 L108,59 L0,59 Z" />
+    <path android:fillColor="#CE1124" android:pathData="M38,27 L39.6,30 L39.6,41 L43.5,41 L43.5,43.2 L39,43.2 L39,46 A1.7,1.7 0 1,1 37,46 L37,43.2 L32.5,43.2 L32.5,41 L36.4,41 L36.4,30 Z" />
 </vector>
