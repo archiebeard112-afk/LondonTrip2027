@@ -197,6 +197,50 @@ main { padding-block: 18px 110px; }
 }
 .blink svg.i { width: 14px; height: 14px; }
 
+.chiprow { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.chiprow .bookchip { margin-bottom: 0; }
+.flchip { border-color: var(--accent); color: var(--accent); }
+.flchip b { color: var(--ink); }
+
+/* Flights sheet */
+.flbtns { display: flex; flex-wrap: wrap; gap: 8px; }
+.flbtns .bigbtn { flex: 1 1 auto; min-height: 46px; font-size: 14px; }
+.fltip { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
+.flh { margin: 20px 0 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.flstats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.flstat { padding: 10px 12px; border-radius: 10px; background: var(--bg); min-width: 0; }
+.flstat span { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.flstat b { display: block; margin-top: 2px; font-family: var(--f-display); font-size: 24px; line-height: 1.1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.flstat b.up { color: var(--signal); }
+.flstat b.down { color: var(--ok); }
+.flempty { grid-column: 1 / -1; margin: 0; font-size: 14px; color: var(--muted); }
+.flspark { display: block; width: 100%; height: 64px; margin-top: 10px; }
+.flform { margin-top: 14px; }
+.flform label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.flrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.flcur { font-family: var(--f-display); font-weight: 700; font-size: 24px; color: var(--muted); }
+.flrow input {
+  height: 44px;
+  padding: 0 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+.flrow input:focus { border-color: var(--accent); outline: none; }
+#flAmt { width: 7.5em; font-family: var(--f-mono); }
+#flNote { flex: 1 1 8em; min-width: 0; }
+.flrow .bigbtn { flex: 0 0 auto; min-height: 44px; }
+.flerr { margin: 6px 0 0; font-size: 13px; color: var(--signal); }
+.fllist { list-style: none; margin: 14px 0 0; padding: 0; }
+.fllist li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.fllist .fd { flex: 0 0 5.5em; font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); }
+.fllist .fp { flex: 0 0 auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fllist .fn { flex: 1; min-width: 0; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fllist .low { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ok); border: 1.5px solid var(--ok); border-radius: 4px; padding: 1px 5px; }
+.fllist .rm { flex: 0 0 auto; min-height: 32px; padding: 0 10px; border: 1.5px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; }
+
 /* Day head */
 .kicker { margin: 0; font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.04em; color: var(--muted); }
 .dayhead h2 { margin: 4px 0 6px; font-family: var(--f-display); font-weight: 700; font-size: 32px; line-height: 1.05; text-wrap: balance; }
@@ -531,6 +575,35 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   <ul class="blist" id="bookList"></ul>
 </div>
 
+<div class="scrim" id="flScrim" hidden></div>
+<div class="sheet wrap" id="flSheet" role="dialog" aria-modal="true" aria-labelledby="flTitle" hidden>
+  <div class="sheethead">
+    <h2 id="flTitle">Flights</h2>
+    <button class="xbtn" id="flClose" type="button" aria-label="Close flights">&times;</button>
+  </div>
+  <p class="sub">Denver (DEN) &#8644; London Heathrow (LHR) &middot; out Thu Feb 19, back Sun Feb 28, 2027 &middot; 2 adults, round trip</p>
+  <div class="flbtns">
+    <a class="bigbtn" id="flGoogle" target="_blank" rel="noopener" href="#">Check Google Flights</a>
+    <a class="bigbtn ghost" id="flKayak" target="_blank" rel="noopener" href="#">Kayak</a>
+    <a class="bigbtn ghost" id="flSky" target="_blank" rel="noopener" href="#">Skyscanner</a>
+  </div>
+  <p class="fltip">Tip: on Google Flights, turn on <b>Track prices</b> and Google will email you when this fare changes.</p>
+  <h3 class="flh">Price log</h3>
+  <div class="flstats" id="flStats"></div>
+  <svg class="flspark" id="flSpark" viewBox="0 0 300 64" preserveAspectRatio="none" aria-hidden="true" hidden></svg>
+  <form class="flform" id="flForm" autocomplete="off">
+    <label for="flAmt">Total for 2, in US dollars</label>
+    <div class="flrow">
+      <span class="flcur">$</span>
+      <input id="flAmt" type="text" inputmode="decimal" placeholder="1450">
+      <input id="flNote" type="text" placeholder="Airline (optional)">
+      <button class="bigbtn" type="submit">Add</button>
+    </div>
+    <p class="flerr" id="flErr" hidden></p>
+  </form>
+  <ul class="fllist" id="flList"></ul>
+</div>
+
 <script>
 (function () {
   'use strict';
@@ -788,7 +861,13 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
       ] }
   ];
 
+  var FLIGHTS = {
+    google: 'https://www.google.com/travel/flights?q=' + encodeURIComponent('Flights from DEN to LHR on 2027-02-19 through 2027-02-28 for 2 adults round trip'),
+    kayak: 'https://www.kayak.com/flights/DEN-LHR/2027-02-19/2027-02-28/2adults',
+    sky: 'https://www.skyscanner.com/transport/flights/den/lhr/270219/270228/?adultsv2=2&rtn=1'
+  };
   var BOOKINGS = [
+    { id: 'flights', t: 'Round-trip flights', d: 'DEN \u21C4 LHR \u00B7 Feb 19\u201328 \u00B7 2 adults', u: FLIGHTS.google },
     { id: 'rowan', t: 'Rowan Live', d: 'Wed Feb 24, 7:30 PM \u00B7 Gillian Lynne Theatre', pre: true },
     { id: 'tower', t: 'Tower of London tickets', d: 'Mon Feb 22 \u00B7 confirm 2027 winter hours', u: 'https://www.hrp.org.uk/tower-of-london/visit/tickets-and-prices/' },
     { id: 'murano', t: 'Caf\u00e9 Murano', d: 'Mon Feb 22, 6:30 PM \u00B7 OpenTable', u: 'https://www.opentable.co.uk/cafe-murano-covent-garden' },
@@ -826,6 +905,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     pin: 'M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11zM12 10.5a2 2 0 1 0 0-.01',
     book: 'M4 19.5V5a2 2 0 0 1 2-2h14v15H6a2 2 0 0 0-2 2 2 2 0 0 0 2 2h14M8 7.5h8',
     check: 'M5 12.5l4.5 4.5L19 7.5',
+    plane: 'M10.5 13.5 3 11l1.5-1.5 8 1 4-4.5a2 2 0 0 1 3 3L15 13l1 8-1.5 1.5L12 15l-3 3v2.5L7.5 22l-1-3.5L3 17.5 4.5 16H7l3.5-2.5z',
     ticket: 'M3 8h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4zM14 8v10',
     out: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
     list: 'M9 6h11M9 12h11M9 18h11M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17'
@@ -932,10 +1012,17 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     var d = DAYS[i];
     if (n < 0) {
       var left = BOOKINGS.length - bookedCount();
-      if (left === 0) return null;
-      return el('button', { type: 'button', class: 'bookchip', onclick: openBookings }, icon(ICON.list),
-        el('span', { text: left + (left === 1 ? ' booking' : ' bookings') + ' to make' }),
-        el('b', { text: 'Open' }));
+      var row = el('div', { class: 'chiprow' });
+      if (left > 0) {
+        row.appendChild(el('button', { type: 'button', class: 'bookchip', onclick: openBookings }, icon(ICON.list),
+          el('span', { text: left + (left === 1 ? ' booking' : ' bookings') + ' to make' }), el('b', { text: 'Open' })));
+      }
+      if (!booked.flights) {
+        var latest = fares.length ? fares[fares.length - 1] : null;
+        row.appendChild(el('button', { type: 'button', class: 'bookchip flchip', onclick: openFlights }, icon(ICON.plane),
+          el('span', { text: latest ? 'Flights ' + usd(latest.p) : 'Flight prices' }), el('b', { text: 'Check' })));
+      }
+      return row.children.length ? row : null;
     }
     if (n !== i || n >= DAYS.length) return null;
     var idx = -1;
@@ -1101,6 +1188,78 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   $('bookClose').addEventListener('click', closeBookings);
   $('bookScrim').addEventListener('click', closeBookings);
 
+  // Flights: search links + a price log kept on this phone
+  var fares = load('ldn.fares', []);
+  if (!Array.isArray(fares)) fares = [];
+  function usd(n) {
+    try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n); }
+    catch (e) { return '$' + Math.round(n); }
+  }
+  function shortDate(ms) { return new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+  function renderFlights() {
+    $('flGoogle').href = FLIGHTS.google; $('flKayak').href = FLIGHTS.kayak; $('flSky').href = FLIGHTS.sky;
+    var stats = $('flStats'); stats.textContent = '';
+    var spark = $('flSpark'); spark.textContent = ''; spark.setAttribute('hidden', '');
+    var list = $('flList'); list.textContent = '';
+    if (!fares.length) {
+      stats.appendChild(el('p', { class: 'flempty', text: 'No prices logged yet. Check a fare above, then add the total here to watch it over time.' }));
+      return;
+    }
+    var latest = fares[fares.length - 1];
+    var low = fares.reduce(function (m, f) { return f.p < m.p ? f : m; }, fares[0]);
+    var prev = fares.length > 1 ? fares[fares.length - 2] : null;
+    var diff = prev ? latest.p - prev.p : 0;
+    stats.appendChild(el('div', { class: 'flstat' }, el('span', { text: 'Latest' }), el('b', { text: usd(latest.p) })));
+    stats.appendChild(el('div', { class: 'flstat' }, el('span', { text: 'Lowest' }), el('b', { text: usd(low.p) })));
+    stats.appendChild(el('div', { class: 'flstat' }, el('span', { text: 'Change' }),
+      el('b', { class: diff > 0 ? 'up' : diff < 0 ? 'down' : '', text: prev ? (diff > 0 ? '+' : diff < 0 ? '\u2212' : '') + usd(Math.abs(diff)) : '\u2014' })));
+    if (fares.length > 1) {
+      var ps = fares.map(function (f) { return f.p; });
+      var mn = Math.min.apply(null, ps), mx = Math.max.apply(null, ps), rg = (mx - mn) || 1;
+      var pts = fares.map(function (f, k) { return [6 + k * (288 / (fares.length - 1)), 56 - ((f.p - mn) / rg) * 48]; });
+      var NS = 'http://www.w3.org/2000/svg';
+      var line = document.createElementNS(NS, 'polyline');
+      line.setAttribute('points', pts.map(function (q) { return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' '));
+      line.setAttribute('fill', 'none'); line.setAttribute('stroke', 'var(--accent)'); line.setAttribute('stroke-width', '2.5');
+      line.setAttribute('vector-effect', 'non-scaling-stroke'); line.setAttribute('stroke-linejoin', 'round');
+      spark.appendChild(line);
+      var last = pts[pts.length - 1];
+      var dot = document.createElementNS(NS, 'circle');
+      dot.setAttribute('cx', last[0]); dot.setAttribute('cy', last[1]); dot.setAttribute('r', '4'); dot.setAttribute('fill', 'var(--accent)');
+      spark.appendChild(dot);
+      spark.removeAttribute('hidden');
+    }
+    fares.slice().reverse().forEach(function (f) {
+      var rm = el('button', { type: 'button', class: 'rm', 'aria-label': 'Remove ' + usd(f.p) + ' from ' + shortDate(f.t) }, 'Remove');
+      rm.addEventListener('click', function () {
+        fares = fares.filter(function (x) { return x !== f; });
+        save('ldn.fares', fares); renderFlights(); show(current, false);
+      });
+      list.appendChild(el('li', {}, el('span', { class: 'fd', text: shortDate(f.t) }), el('span', { class: 'fp', text: usd(f.p) }),
+        f === low && fares.length > 1 ? el('span', { class: 'low', text: 'Lowest' }) : null,
+        el('span', { class: 'fn', text: f.n || '' }), rm));
+    });
+  }
+  function openFlights() {
+    closeBookings();
+    renderFlights();
+    $('flSheet').hidden = false; $('flScrim').hidden = false;
+  }
+  function closeFlights() { $('flSheet').hidden = true; $('flScrim').hidden = true; }
+  $('flClose').addEventListener('click', closeFlights);
+  $('flScrim').addEventListener('click', closeFlights);
+  $('flForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = parseFloat(String($('flAmt').value).replace(/[$,\s]/g, ''));
+    var err = $('flErr');
+    if (!isFinite(v) || v <= 0) { err.textContent = 'Enter the total fare as a number, like 1450.'; err.hidden = false; return; }
+    err.hidden = true;
+    fares.push({ t: Date.now(), p: Math.round(v), n: $('flNote').value.trim().slice(0, 40) });
+    save('ldn.fares', fares);
+    $('flAmt').value = ''; $('flNote').value = '';
+    renderFlights(); show(current, false);
+  });
+
   // 6. Currency converter: small popup with a number pad
   var savedRates = load('ldn.rates', { GBP: 1.30 });
   var cv = { toUsd: true, amount: '', rate: (savedRates && savedRates.GBP > 0) ? savedRates.GBP : 1.30 };
@@ -1157,7 +1316,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     if (b) press(b.getAttribute('data-k'));
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeCv(); closeBookings(); return; }
+    if (e.key === 'Escape') { closeCv(); closeBookings(); closeFlights(); return; }
     if (pop.hidden || e.target === rateEl) return;
     if (/^[0-9]$/.test(e.key) || e.key === '.') press(e.key);
     else if (e.key === 'Backspace') press('back');
@@ -1209,10 +1368,10 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   // Swipe left for the next day, right for the previous day.
   var swipeX = null, swipeY = 0;
   function swipeIgnored(t) {
-    return !t || !t.closest || !!t.closest('.strip, #cvpop, #toast, #bookSheet, input');
+    return !t || !t.closest || !!t.closest('.strip, #cvpop, #toast, #bookSheet, #flSheet, input');
   }
   document.addEventListener('touchstart', function (e) {
-    if (e.touches.length !== 1 || !pop.hidden || !$('bookSheet').hidden || swipeIgnored(e.target)) { swipeX = null; return; }
+    if (e.touches.length !== 1 || !pop.hidden || !$('bookSheet').hidden || !$('flSheet').hidden || swipeIgnored(e.target)) { swipeX = null; return; }
     swipeX = e.touches[0].clientX;
     swipeY = e.touches[0].clientY;
   }, { passive: true });
