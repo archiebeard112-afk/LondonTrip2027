@@ -19,9 +19,30 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-/** Shows Google Flights inside the app, with a bar to get back to the itinerary. */
+/** Shows Google Flights or Skyscanner inside the app, with a bar to get back to the itinerary. */
 public class FlightsActivity extends Activity {
     public static final String EXTRA_URL = "url";
+    public static final String EXTRA_TITLE = "title";
+
+    /** Returns the screen title if this link should open in the in-app flight browser, otherwise null. */
+    public static String titleFor(Uri url) {
+        String host = url.getHost();
+        String path = url.getPath();
+        if (host == null) {
+            return null;
+        }
+        if ((host.equals("www.google.com") || host.equals("google.com")) && path != null && path.startsWith("/travel/flights")) {
+            return "Google Flights";
+        }
+        if (isSkyscanner(host)) {
+            return "Skyscanner";
+        }
+        return null;
+    }
+
+    private static boolean isSkyscanner(String host) {
+        return host.startsWith("skyscanner.") || host.contains(".skyscanner.");
+    }
 
     private WebView web;
     private ProgressBar progress;
@@ -57,7 +78,8 @@ public class FlightsActivity extends Activity {
         back.setOnClickListener(v -> finish());
 
         TextView title = new TextView(this);
-        title.setText("Google Flights");
+        String screenTitle = getIntent().getStringExtra(EXTRA_TITLE);
+        title.setText(screenTitle != null ? screenTitle : "Flights");
         title.setTextColor(fg);
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17);
         title.setTypeface(Typeface.DEFAULT_BOLD);
@@ -84,6 +106,8 @@ public class FlightsActivity extends Activity {
         s.setDomStorageEnabled(true);
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
+        // Present as regular mobile Chrome so the sites show their normal pages.
+        s.setUserAgentString(s.getUserAgentString().replace("; wv)", ")"));
 
         web.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -99,8 +123,8 @@ public class FlightsActivity extends Activity {
                 String scheme = url.getScheme();
                 String host = url.getHost();
                 boolean web = "https".equals(scheme) || "http".equals(scheme);
-                if (web && host != null && (host.equals("google.com") || host.endsWith(".google.com"))) {
-                    return false; // stay on Google pages inside the app
+                if (web && host != null && (host.equals("google.com") || host.endsWith(".google.com") || isSkyscanner(host))) {
+                    return false; // stay on Google Flights or Skyscanner inside the app
                 }
                 // Airline and booking sites open in the browser.
                 openExternally(url);

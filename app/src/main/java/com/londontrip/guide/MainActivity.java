@@ -57,13 +57,12 @@ public class MainActivity extends Activity {
                 if ("file".equals(url.getScheme())) {
                     return false;
                 }
-                // Google Flights opens inside the app.
-                String host = url.getHost();
-                String path = url.getPath();
-                if (host != null && (host.equals("www.google.com") || host.equals("google.com"))
-                        && path != null && path.startsWith("/travel/flights")) {
+                // Google Flights and Skyscanner open inside the app.
+                String title = FlightsActivity.titleFor(url);
+                if (title != null) {
                     Intent flights = new Intent(MainActivity.this, FlightsActivity.class);
                     flights.putExtra(FlightsActivity.EXTRA_URL, url.toString());
+                    flights.putExtra(FlightsActivity.EXTRA_TITLE, title);
                     startActivity(flights);
                     return true;
                 }
