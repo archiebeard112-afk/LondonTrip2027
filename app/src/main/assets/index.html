@@ -3,14 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<style>html,body{margin:0}[hidden]{display:none!important}</style>
 <title>London Trip Guide</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Overpass:wght@400;600;700&family=Overpass+Mono:wght@500&display=swap">
 <style>
-/* Layout: sticky header with a scrolling day strip over a single-column timeline; each day wears a rail-map line color; a floating button opens a currency sheet. */
+/* Layout: compact sticky header + day strip; a "next up" card; then a timeline where each stop carries
+   a type icon on the rail, travel legs sit between stops, and details (history, map buttons) stay compact. */
 :root {
   --bg: #EDF0F5;
   --surface: #FFFFFF;
@@ -22,43 +21,36 @@
   --soft: #E3E9F7;
   --signal: #B3162B;
   --ok: #1F7A4C;
-  --scrim: rgba(5, 10, 20, 0.55);
+  --k-sight: #0019A8;
+  --k-food: #B4471C;
+  --k-pub: #8A5A00;
+  --k-travel: #56677F;
+  --k-show: #9B0056;
+  --shadow: rgba(13, 27, 46, 0.16);
   --f-display: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif;
   --f-body: 'Overpass', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --f-mono: 'Overpass Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0A1322;
-    --surface: #111D33;
-    --ink: #E8EEF8;
-    --muted: #95A5BE;
-    --line: #24334F;
-    --accent: #7B96FF;
-    --accent-ink: #0A1322;
-    --soft: #182645;
-    --signal: #FF7A8A;
-    --ok: #5CCB92;
-    --scrim: rgba(0, 0, 0, 0.65);
+    --bg: #0A1322; --surface: #111D33; --ink: #E8EEF8; --muted: #95A5BE; --line: #24334F;
+    --accent: #7B96FF; --accent-ink: #0A1322; --soft: #182645; --signal: #FF7A8A; --ok: #5CCB92;
+    --k-sight: #7B96FF; --k-food: #FF8F5E; --k-pub: #E7B54A; --k-travel: #95A5BE; --k-show: #FF6FB0;
+    --shadow: rgba(0, 0, 0, 0.45);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0A1322;
-  --surface: #111D33;
-  --ink: #E8EEF8;
-  --muted: #95A5BE;
-  --line: #24334F;
-  --accent: #7B96FF;
-  --accent-ink: #0A1322;
-  --soft: #182645;
-  --signal: #FF7A8A;
-  --ok: #5CCB92;
-  --scrim: rgba(0, 0, 0, 0.65);
+  --bg: #0A1322; --surface: #111D33; --ink: #E8EEF8; --muted: #95A5BE; --line: #24334F;
+  --accent: #7B96FF; --accent-ink: #0A1322; --soft: #182645; --signal: #FF7A8A; --ok: #5CCB92;
+  --k-sight: #7B96FF; --k-food: #FF8F5E; --k-pub: #E7B54A; --k-travel: #95A5BE; --k-show: #FF6FB0;
+  --shadow: rgba(0, 0, 0, 0.45);
   color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
+html, body { margin: 0; }
+[hidden] { display: none !important; }
 body {
   background: var(--bg);
   color: var(--ink);
@@ -66,17 +58,11 @@ body {
   font-size: 16px;
   line-height: 1.45;
   -webkit-text-size-adjust: 100%;
-}
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0 0 auto;
-  height: env(safe-area-inset-top, 0px);
-  z-index: 10;
-  background: var(--bg);
+  -webkit-tap-highlight-color: transparent;
 }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+svg.i { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .wrap {
   width: 100%;
@@ -87,60 +73,46 @@ button { font: inherit; color: inherit; }
 }
 
 /* Header */
-.top {
-  position: sticky;
-  top: env(safe-area-inset-top, 0px);
-  z-index: 5;
-  background: var(--bg);
-  border-bottom: 1px solid var(--line);
-}
-.top-row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  padding-top: 14px;
-}
-.top h1 {
+.top { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 12px; }
+.brand h1 {
   margin: 0;
   font-family: var(--f-display);
   font-weight: 700;
-  font-size: 40px;
-  line-height: 0.95;
+  font-size: 32px;
+  line-height: 1;
   letter-spacing: 0.01em;
   text-transform: uppercase;
 }
-.top .dates {
-  margin: 4px 0 0;
+.brand p { margin: 3px 0 0; font-size: 12px; color: var(--muted); letter-spacing: 0.03em; }
+.brand p b { color: var(--accent); font-weight: 700; }
+.hbtns { display: flex; gap: 6px; flex: 0 0 auto; }
+.hbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
   font-size: 13px;
-  color: var(--muted);
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  cursor: pointer;
 }
-.count {
-  flex: 0 0 auto;
-  font-family: var(--f-mono);
-  font-size: 12px;
-  padding: 6px 10px;
-  border-radius: 6px;
-  background: var(--soft);
-  color: var(--accent);
-  white-space: nowrap;
-}
-.strip {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 12px 0 12px;
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-}
+.hbtn svg.i { width: 16px; height: 16px; color: var(--accent); }
+.hbtn .n { font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-weight: 500; }
+.hbtn[disabled] { opacity: 0.55; }
+
+.strip { display: flex; gap: 6px; overflow-x: auto; padding: 10px 0; scroll-snap-type: x proximity; scrollbar-width: none; }
 .strip::-webkit-scrollbar { display: none; }
 .day {
   flex: 0 0 auto;
-  width: 54px;
-  padding: 7px 0 0;
+  width: 50px;
+  padding: 5px 0 0;
   border: 1px solid var(--line);
-  border-bottom: 5px solid var(--c);
+  border-bottom: 4px solid var(--c);
   border-radius: 8px;
   background: var(--surface);
   color: var(--ink);
@@ -148,116 +120,154 @@ button { font: inherit; color: inherit; }
   cursor: pointer;
   scroll-snap-align: center;
 }
-.day .dow {
-  display: block;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.day .num {
-  display: block;
-  font-family: var(--f-display);
-  font-weight: 700;
-  font-size: 26px;
-  line-height: 1.1;
-  padding-bottom: 4px;
-}
-.day[aria-current="true"] {
-  background: var(--c);
-  border-color: var(--c);
-  color: #fff;
-}
+.day .dow { display: block; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.day .num { display: block; font-family: var(--f-display); font-weight: 700; font-size: 22px; line-height: 1.1; padding-bottom: 3px; }
+.day[aria-current="true"] { background: var(--c); border-color: var(--c); color: #fff; }
 .day[aria-current="true"] .dow { color: rgba(255, 255, 255, 0.85); }
 
-/* Day panel */
-main { padding-block: 22px 120px; }
-.kicker {
-  margin: 0;
-  font-family: var(--f-mono);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-}
-.dayhead h2 {
-  margin: 4px 0 8px;
-  font-family: var(--f-display);
-  font-weight: 700;
-  font-size: 34px;
-  line-height: 1.05;
-  text-wrap: balance;
-}
-.lede {
-  margin: 0;
-  max-width: 62ch;
-  color: var(--muted);
-}
-.progress {
-  margin: 10px 0 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--c);
-}
+main { padding-block: 18px 110px; }
 
-.stops {
-  list-style: none;
-  margin: 22px 0 0;
-  padding: 0;
-}
-.stop {
+/* Next-up card */
+.next {
   display: grid;
-  grid-template-columns: 4.6rem minmax(0, 1fr);
-  column-gap: 0;
-  padding-top: 18px;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 14px var(--shadow);
 }
-.time {
-  padding-top: 2px;
-  font-family: var(--f-mono);
+.next .eyebrow { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c, var(--accent)); }
+.next h3 { margin: 0; font-size: 20px; line-height: 1.2; text-wrap: balance; }
+.next .meta { margin: 0; font-size: 14px; color: var(--muted); }
+.next .row { display: flex; flex-wrap: wrap; gap: 8px; }
+.bigbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  flex: 1 1 auto;
+}
+.bigbtn.ghost { background: var(--soft); color: var(--accent); flex: 0 0 auto; }
+
+/* Day head */
+.kicker { margin: 0; font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.04em; color: var(--muted); }
+.dayhead h2 { margin: 4px 0 6px; font-family: var(--f-display); font-weight: 700; font-size: 32px; line-height: 1.05; text-wrap: balance; }
+.lede { margin: 0; max-width: 62ch; color: var(--muted); font-size: 15px; }
+.summary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.summary span { display: inline-flex; align-items: center; gap: 5px; }
+.summary svg.i { width: 15px; height: 15px; }
+.summary .prog { margin-left: auto; font-weight: 700; color: var(--c); }
+
+/* Timeline */
+.stops { list-style: none; margin: 16px 0 0; padding: 0; }
+.stop { display: grid; grid-template-columns: 4.2rem 36px minmax(0, 1fr); }
+.leg { display: contents; }
+.leg .lt { grid-column: 2; display: flex; justify-content: center; }
+.leg .lt::before { content: ""; width: 2px; background: var(--line); }
+.leg .lx {
+  grid-column: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0 8px 10px;
   font-size: 13px;
   color: var(--muted);
-  font-variant-numeric: tabular-nums;
 }
-.body {
-  position: relative;
-  min-width: 0;
-  padding: 0 0 18px 18px;
-  border-left: 3px solid var(--c);
-  border-bottom: 1px solid transparent;
-}
-.stop:last-child .body { padding-bottom: 6px; border-left-color: transparent; }
-.stop:last-child .body::before { left: -8px; }
-.body::before {
-  content: "";
-  position: absolute;
-  left: -9px;
-  top: 4px;
-  width: 15px;
-  height: 15px;
+.leg .lx svg.i { width: 16px; height: 16px; }
+.leg .lx b { color: var(--ink); font-weight: 600; }
+.time { grid-column: 1; padding-top: 8px; font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rail { grid-column: 2; display: flex; flex-direction: column; align-items: center; }
+.dot {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
   border-radius: 50%;
-  background: var(--bg);
-  border: 3px solid var(--c);
+  background: var(--surface);
+  border: 2px solid var(--k);
+  color: var(--k);
 }
-.stop.done .body::before { background: var(--c); }
-.titlerow {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-}
-.titlerow h3 {
-  margin: 0;
-  font-family: var(--f-body);
+.dot svg.i { width: 17px; height: 17px; }
+.rail::after { content: ""; flex: 1; width: 2px; background: var(--line); }
+.stop:last-child .rail::after { background: transparent; }
+.card { grid-column: 3; min-width: 0; padding: 6px 0 14px 10px; }
+.titlerow { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.titlerow h3 { margin: 0; padding-top: 5px; font-size: 17px; font-weight: 700; line-height: 1.25; text-wrap: balance; }
+.note { margin: 3px 0 0; color: var(--muted); font-size: 14.5px; max-width: 58ch; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.tag {
+  font-size: 10.5px;
   font-weight: 700;
-  font-size: 17px;
-  line-height: 1.25;
-  text-wrap: balance;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1.5px solid var(--line);
+  color: var(--muted);
 }
-.stop.done h3 { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.tag.alert { border-color: var(--signal); color: var(--signal); }
+.tag.good { border-color: var(--ok); color: var(--ok); }
+
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px 0 11px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.pin svg.i { width: 17px; height: 17px; }
+.hist {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 13px 0 11px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hist svg.i { width: 16px; height: 16px; color: var(--accent); }
+.hist[aria-expanded="true"] { background: var(--soft); border-color: var(--soft); }
+.info {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+.info p { margin: 0; }
+.info p + p { margin-top: 8px; }
+.info .lbl { display: block; margin-bottom: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--k); }
+
 .tick {
   flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
-  margin: -4px -4px 0 0;
+  width: 34px;
+  height: 34px;
   padding: 0;
   display: grid;
   place-items: center;
@@ -267,77 +277,67 @@ main { padding-block: 22px 120px; }
   color: transparent;
   cursor: pointer;
 }
-.tick svg { width: 16px; height: 16px; }
+.tick svg.i { width: 16px; height: 16px; stroke-width: 3; }
 .tick[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: var(--surface); }
-.note { margin: 4px 0 0; color: var(--muted); font-size: 15px; max-width: 58ch; }
-.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.tag {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 3px 7px;
-  border-radius: 4px;
-  background: var(--soft);
-  color: var(--accent);
-}
-.tag.alert { background: transparent; border: 1.5px solid var(--signal); color: var(--signal); padding: 1.5px 6px; }
-.tag.good { background: transparent; border: 1.5px solid var(--ok); color: var(--ok); padding: 1.5px 6px; }
 
-.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.go {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0 16px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-size: 14px;
-  font-weight: 700;
-  text-decoration: none;
-}
-.go svg { width: 16px; height: 16px; flex: 0 0 auto; }
-.go:active { transform: translateY(1px); }
+/* Done stops fold to one line */
+.stop.done .dot { background: var(--k); color: var(--surface); }
+.stop.done .titlerow h3 { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.stop.done .note, .stop.done .tags, .stop.done .actions, .stop.done .info { display: none; }
+.stop.done .card { padding-bottom: 8px; }
 
-.home {
-  margin-top: 26px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-}
+.home { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 .home p { margin: 0; font-size: 14px; color: var(--muted); }
-.go.alt { background: transparent; color: var(--accent); border: 2px solid var(--accent); }
 
-/* Currency */
+/* Sheets (bookings) */
+.scrim { position: fixed; inset: 0; z-index: 40; background: rgba(5, 10, 20, 0.5); }
+.sheet {
+  position: fixed;
+  z-index: 41;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 86%;
+  overflow-y: auto;
+  margin: 0 auto;
+  max-width: 640px;
+  background: var(--surface);
+  border-radius: 18px 18px 0 0;
+  padding-top: 16px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+}
+.sheethead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sheethead h2 { margin: 0; font-family: var(--f-display); font-weight: 700; font-size: 26px; text-transform: uppercase; letter-spacing: 0.02em; }
+.xbtn { width: 40px; height: 40px; margin-right: -8px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 26px; line-height: 1; cursor: pointer; }
+.sheet .sub { margin: 4px 0 12px; font-size: 14px; color: var(--muted); }
+.blist { list-style: none; margin: 0; padding: 0; }
+.bitem { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.bitem .tick { margin-top: 2px; }
+.bitem .bt { min-width: 0; flex: 1; }
+.bitem h4 { margin: 0; font-size: 16px; }
+.bitem p { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); }
+.bitem.done h4 { color: var(--muted); text-decoration: line-through; }
+
+/* Converter */
 .fab {
   position: fixed;
   z-index: 20;
   right: max(16px, env(safe-area-inset-right, 0px));
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  width: 52px;
   height: 52px;
-  padding: 0 20px;
+  padding: 0;
   border: 0;
-  border-radius: 26px;
+  border-radius: 50%;
   background: var(--ink);
   color: var(--bg);
   font-family: var(--f-display);
   font-weight: 700;
-  font-size: 22px;
-  letter-spacing: 0.02em;
+  font-size: 19px;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 6px 18px var(--shadow);
 }
-.fab small { font-family: var(--f-body); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-
 .cvscrim { position: fixed; inset: 0; z-index: 29; background: transparent; }
 .cvpop {
   position: fixed;
@@ -353,123 +353,28 @@ main { padding-block: 22px 120px; }
   border: 1px solid var(--line);
   border-radius: 16px;
   background: var(--surface);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 12px 32px var(--shadow);
 }
 .cvhead { display: flex; align-items: center; gap: 6px; }
-.cvhead h2 {
-  flex: 1;
-  margin: 0;
-  font-family: var(--f-display);
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-.iconbtn {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 50%;
-  background: var(--soft);
-  color: var(--accent);
-  cursor: pointer;
-}
-.iconbtn svg { width: 16px; height: 16px; }
+.cvhead h2 { flex: 1; margin: 0; font-family: var(--f-display); font-weight: 700; font-size: 20px; letter-spacing: 0.03em; text-transform: uppercase; }
+.iconbtn { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--soft); color: var(--accent); cursor: pointer; }
 .iconbtn.plain { background: transparent; color: var(--muted); font-size: 24px; line-height: 1; }
-.cvdisplay {
-  display: grid;
-  gap: 2px;
-  padding: 8px 12px 10px;
-  border-radius: 10px;
-  background: var(--bg);
-  text-align: right;
-}
+.cvdisplay { display: grid; gap: 2px; padding: 8px 12px 10px; border-radius: 10px; background: var(--bg); text-align: right; }
 .cvline { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.cvclear {
-  padding: 4px 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.cvamt {
-  min-width: 0;
-  font-family: var(--f-mono);
-  font-size: 22px;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-}
+.cvclear { padding: 4px 0; border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+.cvamt { min-width: 0; font-family: var(--f-mono); font-size: 22px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .cvamt.empty { color: var(--muted); }
-.cvout {
-  display: block;
-  font-family: var(--f-display);
-  font-weight: 700;
-  font-size: 36px;
-  line-height: 1.05;
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-}
+.cvout { display: block; font-family: var(--f-display); font-weight: 700; font-size: 36px; line-height: 1.05; color: var(--accent); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-.key {
-  height: 46px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 10px;
-  background: var(--soft);
-  color: var(--ink);
-  font-family: var(--f-mono);
-  font-size: 20px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-}
+.key { height: 46px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 10px; background: var(--soft); color: var(--ink); font-family: var(--f-mono); font-size: 20px; cursor: pointer; user-select: none; }
 .key:active { background: var(--line); }
-.key svg { width: 22px; height: 22px; }
+.key svg.i { width: 22px; height: 22px; }
 .cvrate { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--muted); }
-.cvrate input {
-  width: 4.5em;
-  height: 30px;
-  padding: 0 6px;
-  border: 1.5px solid var(--line);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--f-mono);
-  font-size: 14px;
-}
+.cvrate input { width: 4.5em; height: 30px; padding: 0 6px; border: 1.5px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font-family: var(--f-mono); font-size: 14px; }
 .cvrate input:focus { border-color: var(--accent); outline: none; }
 .cvrate a { margin-left: auto; color: var(--accent); font-weight: 700; }
 
-/* App updates (shown only inside the Android app) */
-.topside { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-.updbtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 0 12px;
-  border: 1.5px solid var(--accent);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.updbtn svg { width: 14px; height: 14px; }
-.updbtn[disabled] { opacity: 0.55; }
+/* Update toast */
 .toast {
   position: fixed;
   z-index: 25;
@@ -485,65 +390,45 @@ main { padding-block: 22px 120px; }
   border-radius: 12px;
   background: var(--ink);
   color: var(--bg);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px var(--shadow);
 }
 .toast p { flex: 1; min-width: 0; margin: 0; font-size: 14px; line-height: 1.35; }
-.toast .tbtn {
-  flex: 0 0 auto;
-  min-height: 40px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-weight: 700;
-  cursor: pointer;
-}
-.toast .tclose {
-  flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: inherit;
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-}
+.toast .tbtn { flex: 0 0 auto; min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 700; cursor: pointer; }
+.toast .tclose { flex: 0 0 auto; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 22px; line-height: 1; cursor: pointer; }
 
-/* Day change slide when swiping */
+/* Swipe slide */
 @keyframes slideFromRight { from { transform: translateX(28px); opacity: 0.35; } to { transform: none; opacity: 1; } }
 @keyframes slideFromLeft { from { transform: translateX(-28px); opacity: 0.35; } to { transform: none; opacity: 1; } }
 main.in-left { animation: slideFromRight 0.22s ease-out; }
 main.in-right { animation: slideFromLeft 0.22s ease-out; }
-@media (prefers-reduced-motion: reduce) { main.in-left, main.in-right { animation: none; } }
 
-@media (max-width: 380px) {
-  .top h1 { font-size: 34px; }
-  .stop { grid-template-columns: 4.1rem minmax(0, 1fr); }
-  .result { font-size: 44px; }
+@media (max-width: 370px) {
+  .brand h1 { font-size: 27px; }
+  .hbtn .lbl { display: none; }
+  .stop { grid-template-columns: 3.7rem 34px minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) {
-  * { scroll-behavior: auto !important; transition: none !important; }
+  * { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
 }
 </style>
 </head>
 <body>
 
-
 <header class="top">
   <div class="wrap">
     <div class="top-row">
-      <div>
+      <div class="brand">
         <h1>London</h1>
-        <p class="dates">Feb 20 to 28, 2027 &middot; Covent Garden</p>
+        <p>Feb 20&ndash;28, 2027 &middot; <b id="count">&nbsp;</b></p>
       </div>
-      <div class="topside">
-        <div class="count" id="count">&nbsp;</div>
-        <button class="updbtn" id="upd" type="button" hidden>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span id="updLabel">Update</span>
+      <div class="hbtns">
+        <button class="hbtn" id="bookBtn" type="button" aria-haspopup="dialog">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17"/></svg>
+          <span class="lbl">Bookings</span> <span class="n" id="bookCount"></span>
+        </button>
+        <button class="hbtn" id="upd" type="button" hidden>
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>
+          <span class="lbl" id="updLabel">Update</span>
         </button>
       </div>
     </div>
@@ -551,7 +436,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   </div>
 </header>
 
-<main class="wrap" id="panel" aria-live="polite"></main>
+<main class="wrap" id="panel"></main>
 
 <div class="toast" id="toast" role="status" hidden>
   <p id="toastMsg"></p>
@@ -559,18 +444,16 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   <button class="tclose" id="toastClose" type="button" aria-label="Dismiss">&times;</button>
 </div>
 
-<button class="fab" id="fab" type="button" aria-haspopup="dialog" aria-expanded="false">
-  <span>&pound; &rarr; $</span><small>Convert</small>
-</button>
+<button class="fab" id="fab" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Pounds to dollars converter">&pound;$</button>
 
 <div class="cvscrim" id="cvscrim" hidden></div>
 <div class="cvpop" id="cvpop" role="dialog" aria-labelledby="cvTitle" hidden>
   <div class="cvhead">
     <h2 id="cvTitle">&pound; to $</h2>
     <button class="iconbtn" id="swap" type="button" aria-label="Swap direction">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg>
     </button>
-    <button class="iconbtn plain" id="close" type="button" aria-label="Close converter">&times;</button>
+    <button class="iconbtn plain" id="cvClose" type="button" aria-label="Close converter">&times;</button>
   </div>
   <div class="cvdisplay">
     <div class="cvline">
@@ -592,7 +475,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     <button class="key" type="button" data-k=".">.</button>
     <button class="key" type="button" data-k="0">0</button>
     <button class="key" type="button" data-k="back" aria-label="Delete">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h11v14H9l-6-7zM12.5 9.5l5 5M17.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5h11v14H9l-6-7zM12.5 9.5l5 5M17.5 9.5l-5 5"/></svg>
     </button>
   </div>
   <div class="cvrate">
@@ -602,153 +485,304 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   </div>
 </div>
 
+<div class="scrim" id="bookScrim" hidden></div>
+<div class="sheet wrap" id="bookSheet" role="dialog" aria-modal="true" aria-labelledby="bookTitle" hidden>
+  <div class="sheethead">
+    <h2 id="bookTitle">Before you go</h2>
+    <button class="xbtn" id="bookClose" type="button" aria-label="Close bookings">&times;</button>
+  </div>
+  <p class="sub">Tick each one off once it&rsquo;s booked or confirmed.</p>
+  <ul class="blist" id="bookList"></ul>
+</div>
+
 <script>
 (function () {
   'use strict';
 
   var HOTEL = 'hub by Premier Inn London Covent Garden, 110 St Martin’s Lane, London WC2N 4BA';
 
+  // kind: sight | food | pub | travel | show | rest
+  // go: how you get to this stop from the one before it: [walk|tube, text]
+  // info: History & tips paragraphs
   var DAYS = [
     { t: 'Arrival and Covent Garden', c: '#0019A8',
-      lede: 'Take the Piccadilly line from Heathrow and get off at Leicester Square, the closest stop to the hotel. Tap in and out with a contactless card or phone, one per person.',
+      lede: 'Land, check in near Leicester Square, then an easy first evening on foot.',
       stops: [
-        { time: '1:00 PM', title: 'Land at Heathrow', note: 'Clear customs and follow the signs for the Underground (Piccadilly line).' },
-        { time: '2:00 PM', title: 'Piccadilly line to Leicester Square', note: 'Direct, about 50 minutes and about £5.90. Leicester Square has escalators, which beats Covent Garden’s lifts with luggage. The Elizabeth line to Tottenham Court Road is faster (about 35 minutes) but about £15.50.', m: 'transit',
-          places: [{ q: 'Leicester Square Underground Station, London' }] },
-        { time: '3:15 PM', title: 'Check in at the hotel', note: 'hub by Premier Inn, 110 St Martin’s Lane. A few minutes’ walk from Leicester Square station.', m: 'walking',
-          places: [{ q: HOTEL }] },
-        { time: '4:00 PM', title: 'Pastries and Seven Dials Market', note: 'Walk 5 minutes up St Martin’s Lane. Pastries at Sourdough Sophia or the food stalls at Seven Dials Market, then street performers in the Covent Garden plaza.', m: 'walking',
-          places: [{ l: 'Seven Dials Market', q: 'Seven Dials Market, London' }, { l: 'Sourdough Sophia', q: 'Sourdough Sophia, Covent Garden, London' }] },
-        { time: '6:30 PM', title: 'Dinner at Mr Fogg’s Tavern', note: 'Victorian-themed tavern on St Martin’s Lane, steps from the hotel.', m: 'walking',
-          places: [{ q: "Mr Fogg's Tavern, St Martin's Lane, London" }] },
-        { time: '8:30 PM', title: 'Pint at The Harp', note: 'Traditional two-floor pub on Chandos Place with real ale and stained glass. About 3 minutes from the hotel.', m: 'walking', tags: ['Pub'],
-          places: [{ q: 'The Harp, 47 Chandos Place, London' }] }
+        { time: '1:00 PM', kind: 'travel', title: 'Land at Heathrow', note: 'Clear customs, then follow signs for the Underground.',
+          info: ['Heathrow has four terminals (2, 3, 4 and 5). The Piccadilly line serves all of them; Terminals 2 and 3 share one station.',
+                 'Tap in and out with a contactless card or phone. Each person needs their own, and fares are capped each day.'] },
+        { time: '3:15 PM', kind: 'rest', title: 'Check in at the hotel', note: 'hub by Premier Inn, 110 St Martin’s Lane.',
+          go: ['tube', 'Piccadilly line to Leicester Square, about 50 min (about £5.90)'],
+          places: [{ q: HOTEL }],
+          info: ['Get off at Leicester Square rather than Covent Garden. It’s closer to the hotel and has escalators, which helps with luggage.',
+                 'The Elizabeth line to Tottenham Court Road is faster (about 35 minutes) but costs about £15.50.'] },
+        { time: '4:00 PM', kind: 'sight', title: 'Seven Dials and Covent Garden', note: 'Pastries at Sourdough Sophia or Seven Dials Market, then the street performers in the piazza.',
+          go: ['walk', '5 min up St Martin’s Lane'],
+          places: [{ l: 'Seven Dials Market', q: 'Seven Dials Market, London' }, { l: 'Sourdough Sophia', q: 'Sourdough Sophia, Covent Garden, London' }],
+          info: ['Seven Dials was laid out by Thomas Neale in the 1690s, with a pillar where seven streets meet. The pillar has only six sundials; the column itself is said to be the seventh. Today’s pillar is a 1989 replica.',
+                 'Covent Garden’s piazza, designed by Inigo Jones in the 1630s, was London’s first planned square. It held the city’s fruit and vegetable market until 1974.'] },
+        { time: '6:30 PM', kind: 'food', title: 'Dinner at Mr Fogg’s Tavern', note: 'Victorian-themed tavern on St Martin’s Lane.',
+          go: ['walk', 'about 5 min back down St Martin’s Lane'],
+          places: [{ q: "Mr Fogg's Tavern, St Martin's Lane, London" }],
+          info: ['Named after Phileas Fogg, the hero of Jules Verne’s Around the World in Eighty Days (1872). It’s a modern themed bar dressed up with his imagined travel souvenirs, not a historic pub.'] },
+        { time: '8:30 PM', kind: 'pub', title: 'Pint at The Harp', note: 'Narrow, stained-glass pub on Chandos Place known for real ale.',
+          go: ['walk', '3 min'],
+          places: [{ q: 'The Harp, 47 Chandos Place, London' }],
+          info: ['A small, traditional pub with a cosy upstairs room. In 2010 it became the first London pub named CAMRA’s National Pub of the Year.'] }
       ] },
     { t: 'Royal London', c: '#DC241F',
-      lede: 'Westminster Abbey is closed to sightseeing on Sundays, so it moved to Tuesday. Today is palace, river, a roast and the National Gallery, all on foot.',
+      lede: 'Changing of the Guard, Big Ben, a Sunday roast and the National Gallery, all on foot.',
       stops: [
-        { time: '9:00 AM', title: 'Walk to Buckingham Palace', note: 'Through Trafalgar Square and Admiralty Arch, then along The Mall. About 20 minutes. Be at the palace railings by about 9:30 for a good spot.', m: 'walking',
-          places: [{ q: 'Buckingham Palace, London' }] },
-        { time: '10:00 AM', title: 'Changing of the Guard', note: 'The full ceremony runs at 10:00 on Sundays and lasts about 45 minutes. It can be cancelled for weather or events, so check the Household Division schedule that morning.', m: 'walking', tags: ['Free', '!Check that morning'],
-          places: [{ q: 'Victoria Memorial, Buckingham Palace, London' }] },
-        { time: '11:30 AM', title: 'Big Ben and Westminster Bridge', note: 'About 15 minutes along Birdcage Walk. Photos of Big Ben and Parliament from the bridge.', m: 'walking',
-          places: [{ q: 'Westminster Bridge, London' }] },
-        { time: '1:00 PM', title: 'Sunday roast at the Lamb & Flag', note: 'Historic pub on Rose Street. About 25 minutes’ walk up Whitehall. Roasts fill up, so go early.', m: 'walking', tags: ['Pub', 'Go early'],
-          places: [{ q: 'Lamb & Flag, Rose Street, Covent Garden, London' }] },
-        { time: '3:00 PM', title: 'National Gallery', note: 'A 7-minute walk to Trafalgar Square. Free entry, indoors, and home to Van Gogh’s Sunflowers. No booking needed.', m: 'walking', tags: ['Free'],
-          places: [{ q: 'National Gallery, Trafalgar Square, London' }] },
-        { time: '5:30 PM', title: 'South Bank walk and London Eye', note: 'Cross the Golden Jubilee Bridges from Embankment, about 10 minutes from the gallery, as the Eye lights up.', m: 'walking',
-          places: [{ q: 'London Eye, London' }] },
-        { time: '7:00 PM', title: 'Dinner at Dishoom Covent Garden', note: 'About 20 minutes’ walk back over the bridge. Walk-in queues are common; larger groups should book.', m: 'walking',
-          places: [{ q: 'Dishoom Covent Garden, London' }] }
+        { time: '9:00 AM', kind: 'sight', title: 'Buckingham Palace', note: 'Be at the railings by about 9:30 for a good spot.',
+          go: ['walk', '20 min via Trafalgar Square and The Mall'],
+          places: [{ q: 'Buckingham Palace, London' }],
+          info: ['The monarch’s official London home since Queen Victoria moved in in 1837. When the King is in residence, the Royal Standard flies; otherwise it’s the Union Flag.',
+                 'The Mall was laid out as a ceremonial route in the early 1900s, with Admiralty Arch at one end and the palace at the other.'] },
+        { time: '10:00 AM', kind: 'sight', title: 'Changing of the Guard', note: 'Full ceremony with a band, about 45 minutes.', tags: ['Free', '!Check that morning'],
+          places: [{ q: 'Victoria Memorial, Buckingham Palace, London' }],
+          info: ['The King’s Guard hands over duty to a new guard. The soldiers in red tunics and bearskin hats are from the Foot Guards, serving soldiers as well as ceremonial troops.',
+                 'The steps of the Victoria Memorial give a good view. It can be cancelled for bad weather or events, so check the Household Division schedule that morning.'] },
+        { time: '11:30 AM', kind: 'sight', title: 'Big Ben and Westminster Bridge', note: 'Photos of the tower and Parliament from the bridge.',
+          go: ['walk', '15 min along Birdcage Walk'],
+          places: [{ q: 'Westminster Bridge, London' }],
+          info: ['Big Ben is the nickname of the great bell; the tower was renamed the Elizabeth Tower in 2012. It was finished in 1859 as part of the new Palace of Westminster, rebuilt after a fire in 1834.',
+                 'A five-year restoration finished in 2022, which is why the clock face looks so bright.'] },
+        { time: '1:00 PM', kind: 'pub', title: 'Sunday roast at the Lamb & Flag', note: 'One of the West End’s oldest pubs. Roasts fill up, so go early.', tags: ['Go early'],
+          go: ['walk', '25 min up Whitehall'],
+          places: [{ q: 'Lamb & Flag, Rose Street, Covent Garden, London' }],
+          info: ['It once had the nickname “the Bucket of Blood” for the bare-knuckle fights held here. The poet John Dryden was beaten up in the alley outside in 1679.',
+                 'Charles Dickens is said to have drunk here.'] },
+        { time: '3:00 PM', kind: 'sight', title: 'National Gallery', note: 'Free, indoors, no booking. Van Gogh’s Sunflowers is here.', tags: ['Free'],
+          go: ['walk', '7 min to Trafalgar Square'],
+          places: [{ q: 'National Gallery, Trafalgar Square, London' }],
+          info: ['Founded in 1824 with 38 paintings, it moved into this building on Trafalgar Square in 1838. It now holds over 2,000 Western European paintings from the 1200s to 1900.',
+                 'Beyond Sunflowers, look for Turner’s Fighting Temeraire and Constable’s Hay Wain.'] },
+        { time: '5:30 PM', kind: 'sight', title: 'South Bank and the London Eye', note: 'Walk the river as the Eye lights up at sunset.',
+          go: ['walk', '10 min over the Golden Jubilee Bridges'],
+          places: [{ q: 'London Eye, London' }],
+          info: ['The Eye opened in 2000, planned as a temporary millennium attraction. It’s 135 metres tall, and one turn takes about 30 minutes.',
+                 'Sunset in late February is around 5:30 PM.'] },
+        { time: '7:00 PM', kind: 'food', title: 'Dinner at Dishoom Covent Garden', note: 'Bombay café food. Expect a queue for walk-ins.',
+          go: ['walk', '20 min back over the bridge'],
+          places: [{ q: 'Dishoom Covent Garden, London' }],
+          info: ['Dishoom is modelled on the Irani cafés of old Bombay, opened by Persian immigrants in the early 1900s. This Upper St Martin’s Lane branch, opened in 2010, was the first.',
+                 'The black daal is the signature dish.'] }
       ] },
     { t: 'Tower and Borough Market', c: '#00782A',
-      lede: 'The Tower of London opens at 10 AM on Mondays in winter. Confirm the 2027 hours before you go.',
+      lede: 'Medieval fortress, Tower Bridge, a food market and a coaching inn on the South Bank.',
       stops: [
-        { time: '9:15 AM', title: 'Tube to Tower Hill', note: 'Walk 5 minutes to Embankment, then the District or Circle line straight to Tower Hill, about 15 minutes.', m: 'transit',
-          places: [{ q: 'Tower Hill Underground Station, London' }] },
-        { time: '9:45 AM', title: 'Tower of London', note: 'Crown Jewels first, then the White Tower.', m: 'walking', tags: ['!Opens 10 AM'],
-          places: [{ q: 'Tower of London' }] },
-        { time: '12:30 PM', title: 'Borough Market lunch', note: 'Walk over Tower Bridge and along the river, about 20 minutes. Try the Bread Ahead doughnuts or Padella pasta.', m: 'walking',
-          places: [{ q: 'Borough Market, London' }] },
-        { time: '2:00 PM', title: 'Pint at The George', note: '17th-century inn on Borough High Street with a Dickens connection, about 3 minutes from the market.', m: 'walking', tags: ['Pub'],
-          places: [{ q: 'The George Inn, 75 Borough High Street, London' }] },
-        { time: '3:00 PM', title: 'South Bank stroll', note: 'Walk west past Shakespeare’s Globe and Tate Modern. The Tate is free and indoors if the weather turns.', m: 'walking',
-          places: [{ l: 'Shakespeare’s Globe', q: "Shakespeare's Globe, London" }, { l: 'Tate Modern', q: 'Tate Modern, London' }] },
-        { time: '6:30 PM', title: 'Dinner at Café Murano', note: 'Italian on Tavistock Street. From the Tate, walk over Blackfriars or Waterloo Bridge (about 30 minutes), or take the District line from Blackfriars to Embankment.', m: 'transit', tags: ['Booking advised'],
-          places: [{ q: 'Cafe Murano Covent Garden, Tavistock Street, London' }] }
+        { time: '9:45 AM', kind: 'sight', title: 'Tower of London', note: 'Opens 10:00 on Mondays in winter. Crown Jewels first, then the White Tower.', tags: ['!Book ahead'],
+          go: ['tube', 'Walk to Embankment, then the District or Circle line to Tower Hill, about 20 min'],
+          places: [{ q: 'Tower of London' }],
+          info: ['William the Conqueror began the White Tower around 1078. Over the centuries it has been a royal palace, prison, armoury and place of execution; Anne Boleyn was beheaded here in 1536.',
+                 'The Crown Jewels are still used by the monarch. Free Yeoman Warder (“Beefeater”) tours are included with your ticket, and legend says the kingdom will fall if the ravens leave.'] },
+        { time: '12:30 PM', kind: 'food', title: 'Borough Market lunch', note: 'Try the Bread Ahead doughnuts or Padella pasta.',
+          go: ['walk', '20 min over Tower Bridge and along the river'],
+          places: [{ q: 'Borough Market, London' }],
+          info: ['Tower Bridge, which you cross on the way, opened in 1894. It’s often mistaken for London Bridge, which is the plain one upstream.',
+                 'A market has traded near here for around 1,000 years; the current site dates from 1756.'] },
+        { time: '2:00 PM', kind: 'pub', title: 'Pint at The George', note: 'London’s last galleried coaching inn.',
+          go: ['walk', '3 min down Borough High Street'],
+          places: [{ q: 'The George Inn, 75 Borough High Street, London' }],
+          info: ['Rebuilt in 1677 after a fire, it’s the last surviving galleried coaching inn in London. Coaches once pulled into the courtyard while guests looked down from the balconies.',
+                 'Charles Dickens mentions it in Little Dorrit. It’s owned by the National Trust.'] },
+        { time: '3:00 PM', kind: 'sight', title: 'Shakespeare’s Globe and Tate Modern', note: 'A riverside stroll. Tate Modern is free and indoors if it rains.', tags: ['Free'],
+          go: ['walk', '10 min west along the river'],
+          places: [{ l: 'Globe', q: "Shakespeare's Globe, London" }, { l: 'Tate Modern', q: 'Tate Modern, London' }],
+          info: ['The Globe is a 1997 reconstruction of the 1599 theatre where many of Shakespeare’s plays premiered, close to the original site.',
+                 'Tate Modern fills the former Bankside Power Station and opened in 2000. The Millennium Bridge outside leads straight to St Paul’s.'] },
+        { time: '6:30 PM', kind: 'food', title: 'Dinner at Café Murano', note: 'Relaxed Italian on Tavistock Street.', tags: ['!Book ahead'],
+          go: ['tube', 'District line from Blackfriars to Embankment, or 30 min on foot over Waterloo Bridge'],
+          places: [{ q: 'Cafe Murano Covent Garden, Tavistock Street, London' }],
+          info: ['From chef Angela Hartnett, who also runs the Michelin-starred Murano in Mayfair. This is her more casual spot.'] }
       ] },
     { t: 'Abbey, Horse Guards and Soho', c: '#9B0056',
-      lede: 'The Abbey is about 15 minutes’ walk down Whitehall, so no Tube this morning. Hyde Park is optional.',
+      lede: 'Westminster on foot in the morning, Chinatown for lunch, and Hyde Park if your legs allow.',
       stops: [
-        { time: '9:30 AM', title: 'Westminster Abbey', note: 'Walk down Whitehall, about 15 minutes. Arrive at opening and allow about 2 hours. It can close at short notice for services.', m: 'walking', tags: ['!Book ahead'],
-          places: [{ q: 'Westminster Abbey, London' }] },
-        { time: '11:45 AM', title: 'Horse Guards and the Household Cavalry Museum', note: 'A 10-minute walk back up Whitehall. The guard change is usually at 11:00, so you may miss it; there’s a short inspection most days at 4:00 PM. Check times before you go.', m: 'walking',
-          places: [{ q: 'Household Cavalry Museum, Horse Guards, London' }] },
-        { time: '12:30 PM', title: 'Pint at The Clarence', note: 'On Whitehall, steps from Horse Guards. It serves pub lunches too if you’d rather eat here.', m: 'walking', tags: ['Pub'],
-          places: [{ q: 'The Clarence, Whitehall, London' }] },
-        { time: '1:30 PM', title: 'Soho and Chinatown lunch', note: 'About 15 minutes’ walk north. Dumplings or casual bites.', m: 'walking',
-          places: [{ q: 'Chinatown, London' }] },
-        { time: '3:00 PM', title: 'Hyde Park walk', note: 'Piccadilly line from Leicester Square to Hyde Park Corner, 4 stops. Rotten Row and the royal park grounds. In bad weather, swap in the National Portrait Gallery, which is free.', m: 'transit', tags: ['Optional'],
-          places: [{ l: 'Hyde Park', q: 'Hyde Park Corner, London' }, { l: 'Portrait Gallery', q: 'National Portrait Gallery, London' }] },
-        { time: '6:30 PM', title: 'Dinner at Flat Iron', note: 'Piccadilly line back to Leicester Square, then a short walk. Steak, and the salted caramel ice cream.', m: 'transit',
-          places: [{ q: 'Flat Iron Covent Garden, Henrietta Street, London' }] }
+        { time: '9:30 AM', kind: 'sight', title: 'Westminster Abbey', note: 'Arrive at opening and allow about 2 hours.', tags: ['!Book ahead'],
+          go: ['walk', '15 min down Whitehall'],
+          places: [{ q: 'Westminster Abbey, London' }],
+          info: ['Every coronation since 1066 has taken place here, most recently King Charles III’s in 2023. Seventeen monarchs are buried inside, and Poets’ Corner honours Chaucer, Dickens and many more.',
+                 'Henry III began the Gothic church you see in 1245. It’s a working church and can close at short notice.'] },
+        { time: '11:45 AM', kind: 'sight', title: 'Horse Guards and the Household Cavalry Museum', note: 'See the horses in their stables through the glass.',
+          go: ['walk', '10 min back up Whitehall'],
+          places: [{ q: 'Household Cavalry Museum, Horse Guards, London' }],
+          info: ['Horse Guards was once the official entrance to the royal palaces, and two mounted troopers still stand guard. Behind it, Horse Guards Parade hosts Trooping the Colour each June.',
+                 'The guard change here is usually at 11:00, so you may miss it; there’s a short inspection most days at 4:00 PM.'] },
+        { time: '12:30 PM', kind: 'pub', title: 'Pint at The Clarence', note: 'Traditional pub on Whitehall. It serves pub lunches too.',
+          go: ['walk', '2 min'],
+          places: [{ q: 'The Clarence, Whitehall, London' }],
+          info: ['Whitehall is lined with government ministries, so this is a civil servants’ local. Downing Street is two minutes south, though you can only see it through the gates.'] },
+        { time: '1:30 PM', kind: 'food', title: 'Chinatown lunch', note: 'Dumplings or casual bites around Gerrard Street.',
+          go: ['walk', '15 min north'],
+          places: [{ q: 'Chinatown, London' }],
+          info: ['London’s Chinatown grew up around Gerrard Street in the 1950s and 60s, after an earlier community near the docks in Limehouse. Soho around it has been the city’s nightlife and music quarter for over a century.'] },
+        { time: '3:00 PM', kind: 'sight', title: 'Hyde Park', note: 'Walk Rotten Row and the park. In bad weather, try the National Portrait Gallery instead (free).', tags: ['Optional'],
+          go: ['tube', 'Piccadilly line from Leicester Square to Hyde Park Corner, 4 stops'],
+          places: [{ l: 'Hyde Park', q: 'Hyde Park Corner, London' }, { l: 'Portrait Gallery', q: 'National Portrait Gallery, London' }],
+          info: ['Henry VIII took the land as a royal hunting ground in 1536. Rotten Row, the sandy riding track, is thought to come from “Route du Roi”, and in 1690 it became the first road in Britain lit at night.',
+                 'Speakers’ Corner, in the northeast corner, has hosted public speeches since the 1800s.'] },
+        { time: '6:30 PM', kind: 'food', title: 'Dinner at Flat Iron', note: 'Good-value steak. Finish with the salted caramel ice cream.',
+          go: ['tube', 'Piccadilly line back to Leicester Square'],
+          places: [{ q: 'Flat Iron Covent Garden, Henrietta Street, London' }],
+          info: ['Flat Iron made its name on one cut, the flat iron steak, served simply at a low fixed price.'] }
       ] },
     { t: 'British Museum and Rowan Live', c: '#0077B6',
-      lede: 'Rowan Live is at 7:30 PM. Everything else today bends around it, and it’s all walkable.',
+      lede: 'A museum morning, a rest, then dinner at London’s oldest restaurant before the show.',
       stops: [
-        { time: '10:00 AM', title: 'British Museum', note: 'Opens at 10:00. About 20 minutes’ walk north, or the Northern line from Leicester Square to Tottenham Court Road. Free entry; the Rosetta Stone is the headline.', m: 'walking',
-          places: [{ q: 'British Museum, London' }] },
-        { time: '12:30 PM', title: 'Soup dumplings at Din Tai Fung', note: 'About 15 minutes’ walk back down to Covent Garden.', m: 'walking',
-          places: [{ q: 'Din Tai Fung Covent Garden, London' }] },
-        { time: '1:45 PM', title: 'Rest at the hotel', note: 'Relax, unwind and get dressed up.' },
-        { time: '5:30 PM', title: 'Pre-theatre dinner at Rules', note: 'Classic British dining on Maiden Lane, about 5 minutes from the hotel. Be seated by 5:30.', m: 'walking', tags: ['!Book ahead'],
-          places: [{ q: 'Rules Restaurant, Maiden Lane, London' }] },
-        { time: '7:30 PM', title: 'Rowan Live', note: 'Gillian Lynne Theatre, 166 Drury Lane, about 10 minutes’ walk from Rules. Leave by 7:05.', m: 'walking', tags: ['+Tickets booked'],
-          places: [{ q: 'Gillian Lynne Theatre, 166 Drury Lane, London' }] }
+        { time: '10:00 AM', kind: 'sight', title: 'British Museum', note: 'Opens at 10:00. Free entry; the Rosetta Stone is the headline.', tags: ['Free'],
+          go: ['walk', '20 min north (or Northern line to Tottenham Court Road)'],
+          places: [{ q: 'British Museum, London' }],
+          info: ['Founded in 1753, it was the first free national public museum in the world.',
+                 'Highlights include the Rosetta Stone, which unlocked Egyptian hieroglyphs, the Parthenon sculptures and the Sutton Hoo treasure. It’s huge, so pick a few rooms rather than trying to see it all.'] },
+        { time: '12:30 PM', kind: 'food', title: 'Soup dumplings at Din Tai Fung', note: 'Taiwanese dumplings made in an open kitchen.',
+          go: ['walk', '15 min back to Covent Garden'],
+          places: [{ q: 'Din Tai Fung Covent Garden, London' }],
+          info: ['Famous for xiaolongbao, soup dumplings folded 18 times each. Let them cool for a moment; the soup inside is very hot.'] },
+        { time: '1:45 PM', kind: 'rest', title: 'Rest at the hotel', note: 'Relax and get dressed up for the evening.',
+          go: ['walk', '10 min'],
+          info: ['A good chance to recharge. Today ends late, and tomorrow is another early start.'] },
+        { time: '5:30 PM', kind: 'food', title: 'Pre-theatre dinner at Rules', note: 'Classic British food on Maiden Lane. Be seated by 5:30.', tags: ['!Book ahead'],
+          go: ['walk', '5 min'],
+          places: [{ q: 'Rules Restaurant, Maiden Lane, London' }],
+          info: ['Founded by Thomas Rule in 1798, it’s London’s oldest restaurant. It’s known for game, pies and puddings.',
+                 'Charles Dickens and Charlie Chaplin are among its famous diners.'] },
+        { time: '7:30 PM', kind: 'show', title: 'Rowan Live', note: 'Gillian Lynne Theatre, 166 Drury Lane. Leave Rules by 7:05.', tags: ['+Tickets booked'],
+          go: ['walk', '10 min to Drury Lane'],
+          places: [{ q: 'Gillian Lynne Theatre, 166 Drury Lane, London' }],
+          info: ['Rowan Atkinson’s first West End sketch show in about 40 years, with Mr Bean, Blackadder and Not the Nine O’Clock News material plus new sketches with Richard Curtis and Ben Elton. It runs for just 30 performances.',
+                 'The theatre is named after Gillian Lynne, the choreographer of Cats.'] }
       ] },
     { t: 'South Kensington and Harrods', c: '#894E24',
-      lede: 'Piccadilly line out and back from Leicester Square, with Knightsbridge and Belgravia on foot in between.',
+      lede: 'Museums, the Harrods Food Halls and a hidden Belgravia pub, all along the Piccadilly line.',
       stops: [
-        { time: '9:30 AM', title: 'Piccadilly line to South Kensington', note: 'From Leicester Square, direct, about 15 minutes.', m: 'transit',
-          places: [{ q: 'South Kensington Underground Station, London' }] },
-        { time: '10:00 AM', title: 'Museum morning', note: 'The V&A or the Natural History Museum, both a short walk from the station. General entry to both is free.', m: 'walking',
-          places: [{ l: 'V&A', q: 'Victoria and Albert Museum, London' }, { l: 'Natural History Museum', q: 'Natural History Museum, London' }] },
-        { time: '1:15 PM', title: 'Harrods Food Halls', note: 'About 15 minutes’ walk up Brompton Road, for sweet treats and luxury displays.', m: 'walking',
-          places: [{ q: 'Harrods, Knightsbridge, London' }] },
-        { time: '3:30 PM', title: 'Pint at The Grenadier', note: 'Former officers’ mess with military décor, tucked down Wilton Row in Belgravia. About 15 minutes’ walk from Harrods.', m: 'walking', tags: ['Pub'],
-          places: [{ q: 'The Grenadier, Wilton Row, London' }] },
-        { time: '4:45 PM', title: 'Ride back to the hotel', note: 'Walk 5 minutes to Hyde Park Corner, then the Piccadilly line to Leicester Square, 4 stops.', m: 'transit',
-          places: [{ q: HOTEL }] },
-        { time: '6:30 PM', title: 'Dinner at Hawksmoor Seven Dials', note: 'Steak on Langley Street, about 10 minutes’ walk from the hotel.', m: 'walking', tags: ['!Book ahead'],
-          places: [{ q: 'Hawksmoor Seven Dials, London' }] }
+        { time: '10:00 AM', kind: 'sight', title: 'V&A or the Natural History Museum', note: 'Pick one. General entry to both is free.', tags: ['Free'],
+          go: ['tube', 'Piccadilly line from Leicester Square to South Kensington, about 15 min'],
+          places: [{ l: 'V&A', q: 'Victoria and Albert Museum, London' }, { l: 'Natural History', q: 'Natural History Museum, London' }],
+          info: ['Both belong to “Albertopolis”, the cultural quarter Prince Albert planned with profits from the 1851 Great Exhibition.',
+                 'The Natural History Museum (1881) has a blue whale skeleton hanging in its main hall. The V&A covers art and design, from fashion to furniture.'] },
+        { time: '1:15 PM', kind: 'food', title: 'Harrods Food Halls', note: 'Sweet treats and luxury displays under tiled ceilings.',
+          go: ['walk', '15 min up Brompton Road'],
+          places: [{ q: 'Harrods, Knightsbridge, London' }],
+          info: ['Harrods began as a small grocer run by Charles Henry Harrod in 1849. The Food Halls, with their Edwardian tiles, are the part most worth seeing.'] },
+        { time: '3:30 PM', kind: 'pub', title: 'Pint at The Grenadier', note: 'Former officers’ mess tucked down Wilton Row in Belgravia.',
+          go: ['walk', '15 min'],
+          places: [{ q: 'The Grenadier, Wilton Row, London' }],
+          info: ['Once used as a mess by officers of the Grenadier Guards, it’s full of military décor, and visitors stick banknotes to the ceiling.',
+                 'It’s said to be haunted by an officer who was beaten to death for cheating at cards.'] },
+        { time: '6:30 PM', kind: 'food', title: 'Dinner at Hawksmoor Seven Dials', note: 'British steakhouse on Langley Street.', tags: ['!Book ahead'],
+          go: ['tube', 'Piccadilly line from Hyde Park Corner to Leicester Square, then 10 min on foot'],
+          places: [{ q: 'Hawksmoor Seven Dials, London' }],
+          info: ['Hawksmoor is known for grass-fed, dry-aged British beef cooked over charcoal. Save room for the sticky toffee pudding.'] }
       ] },
     { t: 'St Paul’s and the Ripper tour', c: '#6950A1',
-      lede: 'East London day. The Ripper tour runs after dark and mostly outdoors, so dress warm.',
+      lede: 'Wren’s cathedral, Victorian London and an evening in the East End. Dress warm for the tour.',
       stops: [
-        { time: '9:30 AM', title: 'St Paul’s Cathedral', note: 'Piccadilly line from Leicester Square to Holborn (2 stops), then the Central line to St Paul’s (2 stops), about 20 minutes. Climb to the dome galleries for city views.', m: 'transit',
-          places: [{ q: "St Paul's Cathedral, London" }] },
-        { time: '11:45 AM', title: 'Pint at The Blackfriar', note: 'Ornate former friary pub, about 7 minutes’ walk south of St Paul’s. Or Ye Olde Cheshire Cheese on Fleet Street, about 10 minutes west, which dates from just after the Great Fire.', m: 'walking', tags: ['Pub'],
-          places: [{ l: 'The Blackfriar', q: 'The Black Friar pub, 174 Queen Victoria Street, London' }, { l: 'Cheshire Cheese', q: 'Ye Olde Cheshire Cheese, Fleet Street, London' }] },
-        { time: '12:45 PM', title: 'Leadenhall Market lunch', note: 'Central line from St Paul’s to Bank (1 stop), or about 20 minutes’ walk. Victorian covered market and a Harry Potter filming location. Pub lunch at The Lamb Tavern inside, or pie and mash.', m: 'transit',
-          places: [{ q: 'Leadenhall Market, London' }] },
-        { time: '2:15 PM', title: 'Explore the City', note: 'Relaxed window shopping or a wander through the financial district.' },
-        { time: '5:00 PM', title: 'Dinner at Tayyabs', note: 'Punjabi on Fieldgate Street, about 10 minutes’ walk from Aldgate East station.', m: 'transit', tags: ['Booking advised'],
-          places: [{ q: 'Tayyabs, Fieldgate Street, Whitechapel, London' }] },
-        { time: '7:00 PM', title: 'Jack the Ripper evening tour', note: 'Meet near Aldgate East or Tower Hill. Check your booking email for the exact spot.', m: 'walking', tags: ['!Book ahead'],
-          places: [{ l: 'Aldgate East', q: 'Aldgate East Underground Station, London' }, { l: 'Tower Hill', q: 'Tower Hill Underground Station, London' }] },
-        { time: '9:00 PM', title: 'Drink at The Ten Bells', note: 'On Commercial Street in Spitalfields, where many Ripper tours end. Some of the victims had ties to the pub.', m: 'walking', tags: ['Pub'],
-          places: [{ q: 'The Ten Bells, 84 Commercial Street, London' }] },
-        { time: '10:00 PM', title: 'Tube back to the hotel', note: 'From Liverpool Street, the Central line to Tottenham Court Road, then the Northern line 1 stop to Leicester Square.', m: 'transit',
-          places: [{ q: HOTEL }] }
+        { time: '9:30 AM', kind: 'sight', title: 'St Paul’s Cathedral', note: 'Climb to the dome galleries for city views.',
+          go: ['tube', 'Piccadilly line to Holborn, then the Central line to St Paul’s, about 20 min'],
+          places: [{ q: "St Paul's Cathedral, London" }],
+          info: ['Christopher Wren’s masterpiece was built between 1675 and 1710, after the Great Fire of 1666 destroyed the old cathedral. It survived the Blitz and became a symbol of London’s resilience.',
+                 'It’s 257 steps to the Whispering Gallery and 528 to the Golden Gallery at the top.'] },
+        { time: '11:45 AM', kind: 'pub', title: 'Pint at The Blackfriar', note: 'Ornate pub on a former friary site. Or try Ye Olde Cheshire Cheese.',
+          go: ['walk', '7 min south'],
+          places: [{ l: 'The Blackfriar', q: 'The Black Friar pub, 174 Queen Victoria Street, London' }, { l: 'Cheshire Cheese', q: 'Ye Olde Cheshire Cheese, Fleet Street, London' }],
+          info: ['The Blackfriar was built in 1875 on the site of a Dominican friary and later decorated with marble and bronze friezes of jolly monks. The poet John Betjeman led the campaign that saved it from demolition in the 1960s.',
+                 'Ye Olde Cheshire Cheese, 10 minutes west on Fleet Street, was rebuilt in 1667 after the Great Fire and was a haunt of Samuel Johnson and Dickens.'] },
+        { time: '12:45 PM', kind: 'food', title: 'Leadenhall Market lunch', note: 'Pub lunch at The Lamb Tavern inside, or pie and mash.',
+          go: ['tube', 'Central line from St Paul’s to Bank, 1 stop'],
+          places: [{ q: 'Leadenhall Market, London' }],
+          info: ['There’s been a market here since the 1300s, on the site of Roman London’s forum. The ornate roof was designed in 1881 by Horace Jones, who also designed Tower Bridge.',
+                 'It played Diagon Alley in Harry Potter and the Philosopher’s Stone.'] },
+        { time: '2:15 PM', kind: 'sight', title: 'Explore the City', note: 'Window shopping or a wander through the financial district.',
+          info: ['The City of London is the original Roman city, only about one square mile. It still has its own Lord Mayor and police force, and gets quiet after office hours.'] },
+        { time: '5:00 PM', kind: 'food', title: 'Dinner at Tayyabs', note: 'Punjabi in Whitechapel, known for sizzling lamb chops.', tags: ['!Book ahead'],
+          go: ['tube', 'District line from Monument to Aldgate East, then 10 min on foot'],
+          places: [{ q: 'Tayyabs, Fieldgate Street, Whitechapel, London' }],
+          info: ['A family-run East End favourite since 1972. It’s bring-your-own drinks, and it gets very busy.'] },
+        { time: '7:00 PM', kind: 'sight', title: 'Jack the Ripper tour', note: 'Meet near Aldgate East or Tower Hill. Check your booking for the spot.', tags: ['!Book ahead'],
+          go: ['walk', 'about 10 min'],
+          places: [{ l: 'Aldgate East', q: 'Aldgate East Underground Station, London' }, { l: 'Tower Hill', q: 'Tower Hill Underground Station, London' }],
+          info: ['In 1888 five women were murdered in Whitechapel, crimes blamed on an unidentified killer the press called Jack the Ripper. The case was never solved.',
+                 'The best tours focus as much on the victims and the poverty of Victorian Whitechapel as on the mystery.'] },
+        { time: '9:00 PM', kind: 'pub', title: 'Drink at The Ten Bells', note: 'On Commercial Street, where many Ripper tours end.',
+          go: ['walk', 'with the tour'],
+          places: [{ q: 'The Ten Bells, 84 Commercial Street, London' }],
+          info: ['It faces Christ Church Spitalfields. Some of the Ripper’s victims had ties to the pub, which was even renamed “Jack the Ripper” from 1976 to 1988 before the name was changed back.'] },
+        { time: '10:00 PM', kind: 'travel', title: 'Back to the hotel', note: 'About 30 minutes door to door.',
+          go: ['tube', 'Central line from Liverpool Street to Tottenham Court Road, then the Northern line 1 stop to Leicester Square'],
+          places: [{ q: HOTEL }],
+          info: ['On Friday and Saturday nights the Central line runs all night (the Night Tube), so you won’t miss the last train.'] }
       ] },
     { t: 'Parks and a farewell dinner', c: '#C25A00',
-      lede: 'The Bakerloo line runs from Charing Cross, next to the hotel, straight to Regent’s Park. The afternoon is free, with the Churchill Arms as an easy stop.',
+      lede: 'A morning in Regent’s Park, a free afternoon, and a seafood farewell.',
       stops: [
-        { time: '9:30 AM', title: 'Regent’s Park or Primrose Hill', note: 'Bakerloo line from Charing Cross to Regent’s Park, about 10 minutes. Primrose Hill is about 20 minutes’ walk across the park for the skyline view.', m: 'transit',
-          places: [{ l: 'Regent’s Park', q: "Regent's Park, London" }, { l: 'Primrose Hill', q: 'Primrose Hill, London' }] },
-        { time: '12:00 PM', title: 'Flexible afternoon', note: 'Pick up souvenirs or revisit a favorite spot from the week.' },
-        { time: '3:00 PM', title: 'Pint at The Churchill Arms', note: 'The flower-covered pub in Kensington, about 5 minutes from Notting Hill Gate station. Thai food inside.', m: 'transit', tags: ['Pub'],
-          places: [{ q: 'The Churchill Arms, Kensington Church Street, London' }] },
-        { time: '6:30 PM', title: 'Farewell dinner at J Sheekey', note: 'Seafood in St Martin’s Court, about 3 minutes from the hotel. From Notting Hill Gate, take the Central line to Tottenham Court Road and walk 10 minutes, or the Tube to Leicester Square.', m: 'transit', tags: ['!Book ahead'],
-          places: [{ q: "J Sheekey, St Martin's Court, London" }] }
+        { time: '9:30 AM', kind: 'sight', title: 'Regent’s Park or Primrose Hill', note: 'A quiet walk, or climb Primrose Hill for the skyline.',
+          go: ['tube', 'Bakerloo line from Charing Cross to Regent’s Park, about 10 min'],
+          places: [{ l: 'Regent’s Park', q: "Regent's Park, London" }, { l: 'Primrose Hill', q: 'Primrose Hill, London' }],
+          info: ['John Nash designed the park for the Prince Regent, later George IV, in the 1810s, ringed with white stucco terraces. London Zoo sits in its north end.',
+                 'Primrose Hill is about 20 minutes’ walk across the park, and the view of the skyline from the top is protected.'] },
+        { time: '12:00 PM', kind: 'sight', title: 'Free afternoon', note: 'Souvenirs, a favourite from the week, or Portobello Road Market.',
+          places: [{ l: 'Portobello Road', q: 'Portobello Road Market, London' }],
+          info: ['Saturday is Portobello Road Market’s main day, with antiques at the Notting Hill end. It’s about a 5-minute walk from the Churchill Arms.'] },
+        { time: '3:00 PM', kind: 'pub', title: 'Pint at The Churchill Arms', note: 'The flower-covered pub in Kensington. Thai food inside.',
+          go: ['walk', '5 min from Notting Hill Gate station'],
+          places: [{ q: 'The Churchill Arms, Kensington Church Street, London' }],
+          info: ['Its front is covered in around 100 flower baskets and window boxes. It’s named after Winston Churchill, whose grandparents are said to have been regulars.',
+                 'The back room was one of the first London pubs to serve Thai food.'] },
+        { time: '6:30 PM', kind: 'food', title: 'Farewell dinner at J Sheekey', note: 'Seafood in St Martin’s Court, 3 minutes from the hotel.', tags: ['!Book ahead'],
+          go: ['tube', 'Central line from Notting Hill Gate to Tottenham Court Road, then 10 min on foot'],
+          places: [{ q: "J Sheekey, St Martin's Court, London" }],
+          info: ['Josef Sheekey, a market stall holder, opened it in the 1890s. Being in theatreland made it a favourite with actors, whose photos line the walls.',
+                 'The fish pie is the signature dish.'] }
       ] },
     { t: 'Departure', c: '#5C6670',
-      lede: 'Leaving at 10:00 gets you to Heathrow around 11:00, which suits a flight at about 2 PM or later. Work backward from your real flight time and check your terminal.',
+      lede: 'Leaving at 10:00 gets you to Heathrow around 11:00, which suits a flight at about 2 PM or later.',
       stops: [
-        { time: '8:30 AM', title: 'Full English breakfast at The Delaunay', note: 'On Aldwych, about 10 minutes’ walk from the hotel.', m: 'walking',
-          places: [{ q: 'The Delaunay, Aldwych, London' }] },
-        { time: '9:45 AM', title: 'Check out', note: 'hub by Premier Inn, 110 St Martin’s Lane.' },
-        { time: '10:00 AM', title: 'Piccadilly line to Heathrow', note: 'From Leicester Square, about 50 minutes. Check your terminal first; some Terminal 4 trips need a change at Hatton Cross. The Elizabeth line from Tottenham Court Road is faster but pricier.', m: 'transit',
-          places: [{ l: 'Heathrow', q: 'Heathrow Airport, London' }] }
+        { time: '8:30 AM', kind: 'food', title: 'Breakfast at The Delaunay', note: 'A full English on Aldwych.',
+          go: ['walk', '10 min'],
+          places: [{ q: 'The Delaunay, Aldwych, London' }],
+          info: ['A grand Viennese-style café opened in 2011 by Chris Corbin and Jeremy King, the pair behind The Wolseley. It’s known for breakfasts and pastries.'] },
+        { time: '9:45 AM', kind: 'rest', title: 'Check out', note: 'hub by Premier Inn, 110 St Martin’s Lane.',
+          go: ['walk', '10 min back'] },
+        { time: '10:00 AM', kind: 'travel', title: 'Piccadilly line to Heathrow', note: 'From Leicester Square, about 50 minutes.',
+          go: ['walk', '3 min to Leicester Square station'],
+          places: [{ l: 'Heathrow', q: 'Heathrow Airport, London' }],
+          info: ['Check your terminal first. Terminals 2 and 3 share one station, and some Terminal 4 trips need a change at Hatton Cross.',
+                 'The Elizabeth line from Tottenham Court Road is faster but costs more. For an international flight, aim to arrive about 3 hours early.'] }
       ] }
   ];
 
-  var START = new Date(2027, 1, 20);
-  var ICON_GO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4.5 21l7.5-4 7.5 4z" fill="currentColor"/></svg>';
-  var ICON_OK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var BOOKINGS = [
+    { id: 'rowan', t: 'Rowan Live', d: 'Wed Feb 24, 7:30 PM · Gillian Lynne Theatre', pre: true },
+    { id: 'tower', t: 'Tower of London tickets', d: 'Mon Feb 22 · confirm 2027 winter hours' },
+    { id: 'murano', t: 'Café Murano', d: 'Mon Feb 22, 6:30 PM' },
+    { id: 'abbey', t: 'Westminster Abbey', d: 'Tue Feb 23, 9:30 AM slot' },
+    { id: 'rules', t: 'Rules', d: 'Wed Feb 24, 5:30 PM pre-theatre' },
+    { id: 'hawks', t: 'Hawksmoor Seven Dials', d: 'Thu Feb 25, 6:30 PM' },
+    { id: 'tayyabs', t: 'Tayyabs', d: 'Fri Feb 26, 5:00 PM' },
+    { id: 'ripper', t: 'Jack the Ripper tour', d: 'Fri Feb 26, 7:00 PM · note the meeting point' },
+    { id: 'sheekey', t: 'J Sheekey', d: 'Sat Feb 27, 6:30 PM' }
+  ];
 
-  // Storage helpers: everything works without them.
+  var START = new Date(2027, 1, 20);
+  var KIND = {
+    sight: { label: 'sights', col: 'var(--k-sight)', path: 'M3 21h18M5 21v-9M9.5 21v-9M14.5 21v-9M19 21v-9M2.5 9.5 12 4l9.5 5.5z' },
+    food: { label: 'meals', col: 'var(--k-food)', path: 'M7 3v7M4.5 3v4.5a2.5 2.5 0 0 0 5 0V3M7 10v11M17.5 21V3c-2.5 1-4 4-4 8.5h4' },
+    pub: { label: 'pubs', col: 'var(--k-pub)', path: 'M6 4h11.5l-1.6 15.6a1.5 1.5 0 0 1-1.5 1.4H9.1a1.5 1.5 0 0 1-1.5-1.4zM6.5 9h10.5' },
+    travel: { label: 'travel', col: 'var(--k-travel)', path: 'M7 3h10a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zM4 10.5h16M8 21l2-4M16 21l-2-4M8.5 13.8h.01M15.5 13.8h.01' },
+    rest: { label: 'hotel', col: 'var(--k-travel)', path: 'M3 6v13M3 15h18v4M21 15v-2.5a3 3 0 0 0-3-3h-7V15M7 12.5a1.8 1.8 0 1 0 0-.01' },
+    show: { label: 'show', col: 'var(--k-show)', path: 'M3 8h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4zM14 8v10' }
+  };
+  var ICON = {
+    walk: 'M13 4.5a1.5 1.5 0 1 0 0-.01M9.5 21l2.5-7 2.5 2.5V21M7.5 12.5 10 8.5h3.5l2.5 4M12 14l.5-5.5',
+    tube: KIND.travel.path,
+    pin: 'M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11zM12 10.5a2 2 0 1 0 0-.01',
+    book: 'M4 19.5V5a2 2 0 0 1 2-2h14v15H6a2 2 0 0 0-2 2 2 2 0 0 0 2 2h14M8 7.5h8',
+    check: 'M5 12.5l4.5 4.5L19 7.5',
+    list: 'M9 6h11M9 12h11M9 18h11M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17'
+  };
+
+  // Storage helpers: the app works without them.
   function load(key, fallback) {
     try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
   }
@@ -763,7 +797,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
       var v = p[k];
       if (k === 'class') n.className = v;
       else if (k === 'text') n.textContent = v;
-      else if (k === 'html') n.innerHTML = v;
+      else if (k === 'style') n.setAttribute('style', v);
       else if (k.indexOf('on') === 0) n.addEventListener(k.slice(2), v);
       else if (v === true) n.setAttribute(k, '');
       else if (v !== false && v != null) n.setAttribute(k, v);
@@ -778,18 +812,32 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     }
     return n;
   }
-
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function icon(d) {
+    var s = document.createElementNS(SVGNS, 'svg');
+    s.setAttribute('class', 'i'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('aria-hidden', 'true');
+    var p = document.createElementNS(SVGNS, 'path'); p.setAttribute('d', d); s.appendChild(p);
+    return s;
+  }
+  function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+  function stopKey(i, s) { return i + ':' + slug(s.title); }
+  function modeOf(s) { return s.go && s.go[0] === 'tube' ? 'transit' : 'walking'; }
   function dirUrl(q, mode) {
     return 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(q) + '&travelmode=' + (mode || 'walking');
   }
   function dateOf(i) { return new Date(2027, 1, 20 + i); }
   function dayMs(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); }
+  function tripDay() { return Math.round((dayMs(new Date()) - dayMs(START)) / 86400000); }
 
-  var done = load('ldn.done', {});
+  var done = load('ldn.done2', {});
+  var booked = load('ldn.book', null);
+  if (!booked) { booked = {}; BOOKINGS.forEach(function (b) { if (b.pre) booked[b.id] = true; }); }
+  var openInfo = {};
   var current = 0;
   var strip = document.getElementById('strip');
   var panel = document.getElementById('panel');
   var pills = [];
+  var $ = function (id) { return document.getElementById(id); };
 
   function buildStrip() {
     DAYS.forEach(function (d, i) {
@@ -804,20 +852,67 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   }
 
   function countText() {
-    var today = dayMs(new Date());
-    var diff = Math.round((dayMs(START) - today) / 86400000);
-    if (diff > 0) return diff + (diff === 1 ? ' day to go' : ' days to go');
-    var n = -diff;
-    if (n >= 0 && n < DAYS.length) return 'Day ' + (n + 1) + ' today';
+    var n = tripDay();
+    if (n < 0) return (-n) + (n === -1 ? ' day to go' : ' days to go');
+    if (n < DAYS.length) return 'Day ' + (n + 1) + ' today';
     return 'Trip complete';
   }
 
   function tagEl(raw) {
-    var kind = '';
-    var text = raw;
+    var kind = '', text = raw;
     if (raw.charAt(0) === '!') { kind = ' alert'; text = raw.slice(1); }
     else if (raw.charAt(0) === '+') { kind = ' good'; text = raw.slice(1); }
     return el('span', { class: 'tag' + kind, text: text });
+  }
+
+  function placeLinks(s, compact) {
+    if (!s.places || !s.places.length) return [];
+    var many = s.places.length > 1;
+    return s.places.map(function (p) {
+      return el('a', { class: compact ? 'bigbtn' : 'pin', href: dirUrl(p.q, modeOf(s)), target: '_blank', rel: 'noopener', 'aria-label': 'Directions to ' + (p.l || s.title) },
+        icon(ICON.pin), many ? p.l : 'Directions');
+    });
+  }
+
+  function bookedCount() { return BOOKINGS.filter(function (b) { return booked[b.id]; }).length; }
+  function renderBookCount() { $('bookCount').textContent = bookedCount() + '/' + BOOKINGS.length; }
+
+  // 1. Next-up card
+  function nextCard(i) {
+    var n = tripDay();
+    var d = DAYS[i];
+    if (n < 0) {
+      if (i !== 0 && bookedCount() === BOOKINGS.length) return null;
+      var left = BOOKINGS.length - bookedCount();
+      if (left === 0) return null;
+      return el('section', { class: 'next', style: '--c:' + d.c },
+        el('p', { class: 'eyebrow', text: 'Before you go' }),
+        el('h3', { text: left + (left === 1 ? ' booking' : ' bookings') + ' left to make' }),
+        el('p', { class: 'meta', text: bookedCount() + ' of ' + BOOKINGS.length + ' done. Restaurants and timed tickets go first.' }),
+        el('div', { class: 'row' }, el('button', { type: 'button', class: 'bigbtn', onclick: openBookings }, icon(ICON.list), 'Open checklist')));
+    }
+    if (n !== i || n >= DAYS.length) return null;
+    var idx = -1;
+    for (var k = 0; k < d.stops.length; k++) { if (!done[stopKey(i, d.stops[k])]) { idx = k; break; } }
+    if (idx < 0) {
+      return el('section', { class: 'next', style: '--c:' + d.c },
+        el('p', { class: 'eyebrow', text: 'Today' }),
+        el('h3', { text: 'All done for today' }),
+        el('div', { class: 'row' }, el('a', { class: 'bigbtn', href: dirUrl(HOTEL, 'transit'), target: '_blank', rel: 'noopener' }, icon(ICON.pin), 'Directions to the hotel')));
+    }
+    var s = d.stops[idx];
+    var key = stopKey(i, s);
+    return el('section', { class: 'next', style: '--c:' + d.c },
+      el('p', { class: 'eyebrow', text: 'Next up · ' + s.time }),
+      el('h3', { text: s.title }),
+      s.go ? el('p', { class: 'meta' }, (s.go[0] === 'tube' ? 'Tube: ' : 'Walk: ') + s.go[1]) : null,
+      el('div', { class: 'row' }, placeLinks(s, true).slice(0, 1),
+        el('button', { type: 'button', class: 'bigbtn ghost', onclick: function () { setDone(key, true); show(i, false); } }, icon(ICON.check), 'Done')));
+  }
+
+  function setDone(key, on) {
+    if (on) done[key] = true; else delete done[key];
+    save('ldn.done2', done);
   }
 
   function show(i, userTap) {
@@ -825,86 +920,153 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     save('ldn.day', i);
     var d = DAYS[i];
     var dt = dateOf(i);
-    pills.forEach(function (p, k) {
-      if (k === i) p.setAttribute('aria-current', 'true'); else p.removeAttribute('aria-current');
-    });
+    pills.forEach(function (p, k) { if (k === i) p.setAttribute('aria-current', 'true'); else p.removeAttribute('aria-current'); });
     if (userTap) {
-      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      try { pills[i].scrollIntoView({ inline: 'center', block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }); } catch (e) { /* ignore */ }
+      try { pills[i].scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (e) { /* ignore */ }
       window.scrollTo(0, 0);
     }
     panel.style.setProperty('--c', d.c);
     panel.textContent = '';
 
-    var count = d.stops.filter(function (s, k) { return done[i + '-' + k]; }).length;
-    var progress = el('p', { class: 'progress', text: count + ' of ' + d.stops.length + ' done' });
+    var card = nextCard(i);
+    if (card) panel.appendChild(card);
+
+    // Summary: counts by type and progress
+    var counts = {};
+    d.stops.forEach(function (s) { if (s.kind === 'sight' || s.kind === 'food' || s.kind === 'pub' || s.kind === 'show') counts[s.kind] = (counts[s.kind] || 0) + 1; });
+    var doneN = d.stops.filter(function (s) { return done[stopKey(i, s)]; }).length;
+    var prog = el('span', { class: 'prog', text: doneN + ' of ' + d.stops.length + ' done' });
+    var summary = el('div', { class: 'summary' },
+      ['sight', 'food', 'pub', 'show'].filter(function (k) { return counts[k]; }).map(function (k) {
+        var label = counts[k] === 1 ? { sight: 'sight', food: 'meal', pub: 'pub', show: 'show' }[k] : KIND[k].label;
+        var span = el('span', { style: 'color:' + KIND[k].col }, icon(KIND[k].path));
+        span.appendChild(el('b', { style: 'color:var(--muted);font-weight:600', text: counts[k] + ' ' + label }));
+        return span;
+      }), prog);
 
     panel.appendChild(el('div', { class: 'dayhead' },
       el('p', { class: 'kicker', text: 'DAY ' + (i + 1) + ' · ' + dt.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }).toUpperCase() }),
       el('h2', { text: d.t }),
       el('p', { class: 'lede', text: d.lede }),
-      progress));
+      summary));
 
     var list = el('ol', { class: 'stops' });
     d.stops.forEach(function (s, k) {
-      var key = i + '-' + k;
-      var li = el('li', { class: 'stop' + (done[key] ? ' done' : '') });
-      var tick = el('button', { type: 'button', class: 'tick', 'aria-pressed': done[key] ? 'true' : 'false', 'aria-label': 'Mark done: ' + s.title, html: ICON_OK,
-        onclick: function () {
-          done[key] = !done[key];
-          if (!done[key]) delete done[key];
-          save('ldn.done', done);
-          li.classList.toggle('done', !!done[key]);
-          tick.setAttribute('aria-pressed', done[key] ? 'true' : 'false');
-          var n = d.stops.filter(function (x, z) { return done[i + '-' + z]; }).length;
-          progress.textContent = n + ' of ' + d.stops.length + ' done';
-        } });
-      var body = el('div', { class: 'body' },
+      var key = stopKey(i, s);
+      var kd = KIND[s.kind] || KIND.sight;
+      var li = el('li', { class: 'stop' + (done[key] ? ' done' : ''), style: '--k:' + kd.col });
+
+      // 2. Travel leg between stops
+      if (s.go && k > 0) {
+        li.appendChild(el('div', { class: 'leg' },
+          el('div', { class: 'lt' }),
+          el('div', { class: 'lx' }, icon(s.go[0] === 'tube' ? ICON.tube : ICON.walk),
+            el('span', {}, el('b', { text: s.go[0] === 'tube' ? 'Tube' : 'Walk' }), ' · ' + s.go[1]))));
+      }
+
+      var tick = el('button', { type: 'button', class: 'tick', 'aria-pressed': done[key] ? 'true' : 'false', 'aria-label': 'Mark done: ' + s.title },
+        icon(ICON.check));
+      tick.addEventListener('click', function () {
+        setDone(key, !done[key]);
+        show(i, false);
+      });
+
+      var cardEl = el('div', { class: 'card' },
         el('div', { class: 'titlerow' }, el('h3', { text: s.title }), tick),
         s.note ? el('p', { class: 'note', text: s.note }) : null,
         s.tags && s.tags.length ? el('div', { class: 'tags' }, s.tags.map(tagEl)) : null);
-      if (s.places && s.places.length) {
-        var many = s.places.length > 1;
-        body.appendChild(el('div', { class: 'actions' }, s.places.map(function (p) {
-          return el('a', { class: 'go', href: dirUrl(p.q, s.m), target: '_blank', rel: 'noopener', 'aria-label': 'Directions to ' + (p.l || s.title) },
-            el('span', { html: ICON_GO, style: 'display:inline-flex' }),
-            many ? 'Directions: ' + p.l : 'Directions');
-        })));
+
+      // First stop of the day shows how to get there in its own note line
+      if (s.go && k === 0) {
+        cardEl.insertBefore(el('p', { class: 'note' }, (s.go[0] === 'tube' ? 'Tube: ' : 'Walk: ') + s.go[1]), cardEl.children[1] || null);
       }
+
+      // 3. Compact map buttons + History
+      var actions = el('div', { class: 'actions' }, placeLinks(s, false));
+      var infoBox = null;
+      if (s.info && s.info.length) {
+        var isOpen = !!openInfo[key];
+        var hb = el('button', { type: 'button', class: 'hist', 'aria-expanded': isOpen ? 'true' : 'false' }, icon(ICON.book),
+          s.kind === 'travel' || s.kind === 'rest' ? 'Tips' : 'History');
+        infoBox = el('div', { class: 'info' },
+          el('span', { class: 'lbl', text: s.kind === 'travel' || s.kind === 'rest' ? 'Good to know' : 'History & tips' }),
+          s.info.map(function (t) { return el('p', { text: t }); }));
+        infoBox.hidden = !isOpen;
+        hb.addEventListener('click', function () {
+          var now = infoBox.hidden;
+          infoBox.hidden = !now;
+          hb.setAttribute('aria-expanded', now ? 'true' : 'false');
+          if (now) openInfo[key] = true; else delete openInfo[key];
+        });
+        actions.appendChild(hb);
+      }
+      if (actions.children.length) cardEl.appendChild(actions);
+      if (infoBox) cardEl.appendChild(infoBox);
+
       li.appendChild(el('div', { class: 'time', text: s.time }));
-      li.appendChild(body);
+      // 4. Stop-type icon on the rail
+      li.appendChild(el('div', { class: 'rail' }, el('span', { class: 'dot', title: kd.label }, icon(kd.path))));
+      li.appendChild(cardEl);
       list.appendChild(li);
     });
     panel.appendChild(list);
 
     panel.appendChild(el('div', { class: 'home' },
       el('p', { text: 'Lost or done for the day?' }),
-      el('a', { class: 'go alt', href: dirUrl(HOTEL, 'transit'), target: '_blank', rel: 'noopener' },
-        el('span', { html: ICON_GO, style: 'display:inline-flex' }), 'Directions to the hotel')));
+      el('a', { class: 'pin', href: dirUrl(HOTEL, 'transit'), target: '_blank', rel: 'noopener' }, icon(ICON.pin), 'Back to the hotel')));
   }
 
-  // Currency converter: small popup with a number pad
-  var $ = function (id) { return document.getElementById(id); };
+  // 7. Bookings checklist
+  function renderBookings() {
+    var ul = $('bookList');
+    ul.textContent = '';
+    BOOKINGS.forEach(function (b) {
+      var on = !!booked[b.id];
+      var t = el('button', { type: 'button', class: 'tick', 'aria-pressed': on ? 'true' : 'false', 'aria-label': (on ? 'Unmark ' : 'Mark booked: ') + b.t }, icon(ICON.check));
+      t.addEventListener('click', function () {
+        if (booked[b.id]) delete booked[b.id]; else booked[b.id] = true;
+        save('ldn.book', booked);
+        renderBookings();
+        renderBookCount();
+        show(current, false);
+      });
+      ul.appendChild(el('li', { class: 'bitem' + (on ? ' done' : '') }, t,
+        el('div', { class: 'bt' }, el('h4', { text: b.t }), el('p', { text: b.d }))));
+    });
+  }
+  function openBookings() {
+    renderBookings();
+    $('bookSheet').hidden = false;
+    $('bookScrim').hidden = false;
+  }
+  function closeBookings() {
+    $('bookSheet').hidden = true;
+    $('bookScrim').hidden = true;
+  }
+  $('bookBtn').addEventListener('click', openBookings);
+  $('bookClose').addEventListener('click', closeBookings);
+  $('bookScrim').addEventListener('click', closeBookings);
+
+  // 6. Currency converter: small popup with a number pad
   var savedRates = load('ldn.rates', { GBP: 1.30 });
   var cv = { toUsd: true, amount: '', rate: (savedRates && savedRates.GBP > 0) ? savedRates.GBP : 1.30 };
   var fab = $('fab'), pop = $('cvpop'), cvScrim = $('cvscrim'), amtEl = $('cvAmt'), outEl = $('cvOut'), rateEl = $('rate');
-
   function money(n, cur) {
     try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(n); }
-    catch (e) { return (cur === 'GBP' ? '\u00A3' : '$') + n.toFixed(2); }
+    catch (e) { return (cur === 'GBP' ? '£' : '$') + n.toFixed(2); }
   }
   function parseNum(s) {
     var n = parseFloat(String(s).replace(/,/g, ''));
     return isFinite(n) && n >= 0 ? n : NaN;
   }
   function renderCv() {
-    var fromSym = cv.toUsd ? '\u00A3' : '$';
-    $('cvTitle').textContent = cv.toUsd ? '\u00A3 to $' : '$ to \u00A3';
+    var fromSym = cv.toUsd ? '£' : '$';
+    $('cvTitle').textContent = cv.toUsd ? '£ to $' : '$ to £';
     amtEl.textContent = fromSym + (cv.amount === '' ? '0' : cv.amount);
     amtEl.classList.toggle('empty', cv.amount === '');
     var amt = cv.amount === '' ? 0 : parseNum(cv.amount);
     var r = cv.rate;
-    if (isNaN(amt) || !(r > 0)) { outEl.textContent = '\u2014'; return; }
+    if (isNaN(amt) || !(r > 0)) { outEl.textContent = '—'; return; }
     outEl.textContent = money(cv.toUsd ? amt * r : amt / r, cv.toUsd ? 'USD' : 'GBP');
   }
   function press(k) {
@@ -922,20 +1084,17 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     renderCv();
   }
   function openCv() {
-    pop.hidden = false;
-    cvScrim.hidden = false;
+    pop.hidden = false; cvScrim.hidden = false;
     fab.setAttribute('aria-expanded', 'true');
     rateEl.value = Math.abs(cv.rate * 100 - Math.round(cv.rate * 100)) < 1e-9 ? cv.rate.toFixed(2) : String(cv.rate);
     renderCv();
   }
   function closeCv() {
-    pop.hidden = true;
-    cvScrim.hidden = true;
+    pop.hidden = true; cvScrim.hidden = true;
     fab.setAttribute('aria-expanded', 'false');
   }
-
   fab.addEventListener('click', function () { if (pop.hidden) openCv(); else closeCv(); });
-  $('close').addEventListener('click', closeCv);
+  $('cvClose').addEventListener('click', closeCv);
   cvScrim.addEventListener('click', closeCv);
   $('cvClear').addEventListener('click', function () { press('clear'); });
   $('swap').addEventListener('click', function () { cv.toUsd = !cv.toUsd; renderCv(); });
@@ -944,9 +1103,9 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     if (b) press(b.getAttribute('data-k'));
   });
   document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeCv(); closeBookings(); return; }
     if (pop.hidden || e.target === rateEl) return;
-    if (e.key === 'Escape') closeCv();
-    else if (/^[0-9]$/.test(e.key) || e.key === '.') press(e.key);
+    if (/^[0-9]$/.test(e.key) || e.key === '.') press(e.key);
     else if (e.key === 'Backspace') press('back');
   });
   rateEl.addEventListener('input', function () {
@@ -996,10 +1155,10 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   // Swipe left for the next day, right for the previous day.
   var swipeX = null, swipeY = 0;
   function swipeIgnored(t) {
-    return !t || !t.closest || !!t.closest('.strip, #cvpop, #toast, input');
+    return !t || !t.closest || !!t.closest('.strip, #cvpop, #toast, #bookSheet, input');
   }
   document.addEventListener('touchstart', function (e) {
-    if (e.touches.length !== 1 || !pop.hidden || swipeIgnored(e.target)) { swipeX = null; return; }
+    if (e.touches.length !== 1 || !pop.hidden || !$('bookSheet').hidden || swipeIgnored(e.target)) { swipeX = null; return; }
     swipeX = e.touches[0].clientX;
     swipeY = e.touches[0].clientY;
   }, { passive: true });
@@ -1021,14 +1180,13 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   // Start
   buildStrip();
   $('count').textContent = countText();
-  var todayIdx = Math.round((dayMs(new Date()) - dayMs(START)) / 86400000);
+  renderBookCount();
+  var todayIdx = tripDay();
   var start = (todayIdx >= 0 && todayIdx < DAYS.length) ? todayIdx : load('ldn.day', 0);
   if (typeof start !== 'number' || start < 0 || start >= DAYS.length) start = 0;
   show(start, false);
-  renderCv();
   try { pills[start].scrollIntoView({ inline: 'center', block: 'nearest' }); window.scrollTo(0, 0); } catch (e) { /* ignore */ }
 })();
 </script>
-
 </body>
 </html>
