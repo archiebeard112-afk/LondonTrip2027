@@ -161,6 +161,42 @@ main { padding-block: 18px 110px; }
 }
 .bigbtn.ghost { background: var(--soft); color: var(--accent); flex: 0 0 auto; }
 
+/* Bookings chip */
+.bookchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  margin-bottom: 14px;
+  padding: 0 14px 0 11px;
+  border: 1.5px solid var(--signal);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--signal);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bookchip svg.i { width: 16px; height: 16px; }
+.bookchip b { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+.pin.book { background: var(--soft); color: var(--accent); }
+.blink {
+  flex: 0 0 auto;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.blink svg.i { width: 14px; height: 14px; }
+
 /* Day head */
 .kicker { margin: 0; font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.04em; color: var(--muted); }
 .dayhead h2 { margin: 4px 0 6px; font-family: var(--f-display); font-weight: 700; font-size: 32px; line-height: 1.05; text-wrap: balance; }
@@ -753,16 +789,27 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   ];
 
   var BOOKINGS = [
-    { id: 'rowan', t: 'Rowan Live', d: 'Wed Feb 24, 7:30 PM · Gillian Lynne Theatre', pre: true },
-    { id: 'tower', t: 'Tower of London tickets', d: 'Mon Feb 22 · confirm 2027 winter hours' },
-    { id: 'murano', t: 'Café Murano', d: 'Mon Feb 22, 6:30 PM' },
-    { id: 'abbey', t: 'Westminster Abbey', d: 'Tue Feb 23, 9:30 AM slot' },
-    { id: 'rules', t: 'Rules', d: 'Wed Feb 24, 5:30 PM pre-theatre' },
-    { id: 'hawks', t: 'Hawksmoor Seven Dials', d: 'Thu Feb 25, 6:30 PM' },
-    { id: 'tayyabs', t: 'Tayyabs', d: 'Fri Feb 26, 5:00 PM' },
-    { id: 'ripper', t: 'Jack the Ripper tour', d: 'Fri Feb 26, 7:00 PM · note the meeting point' },
-    { id: 'sheekey', t: 'J Sheekey', d: 'Sat Feb 27, 6:30 PM' }
+    { id: 'rowan', t: 'Rowan Live', d: 'Wed Feb 24, 7:30 PM \u00B7 Gillian Lynne Theatre', pre: true },
+    { id: 'tower', t: 'Tower of London tickets', d: 'Mon Feb 22 \u00B7 confirm 2027 winter hours', u: 'https://www.hrp.org.uk/tower-of-london/visit/tickets-and-prices/' },
+    { id: 'murano', t: 'Caf\u00e9 Murano', d: 'Mon Feb 22, 6:30 PM \u00B7 OpenTable', u: 'https://www.opentable.co.uk/cafe-murano-covent-garden' },
+    { id: 'abbey', t: 'Westminster Abbey', d: 'Tue Feb 23, 9:30 AM slot', u: 'https://www.westminster-abbey.org/visit-us/tickets' },
+    { id: 'rules', t: 'Rules', d: 'Wed Feb 24, 5:30 PM pre-theatre', u: 'https://rules.co.uk/' },
+    { id: 'hawks', t: 'Hawksmoor Seven Dials', d: 'Thu Feb 25, 6:30 PM', u: 'https://thehawksmoor.com/locations/seven-dials' },
+    { id: 'tayyabs', t: 'Tayyabs', d: 'Fri Feb 26, 5:00 PM \u00B7 no booking site found, so this searches', u: 'https://www.google.com/search?q=Tayyabs+Whitechapel+book+a+table' },
+    { id: 'ripper', t: 'Jack the Ripper tour', d: 'Fri Feb 26, 7:00 PM \u00B7 note the meeting point', u: 'https://www.jack-the-ripper-tour.com' },
+    { id: 'sheekey', t: 'J Sheekey', d: 'Sat Feb 27, 6:30 PM \u00B7 OpenTable', u: 'https://www.opentable.com/j-sheekey-the-restaurant' }
   ];
+  var BOOK_BY_TITLE = {
+    'Tower of London': 'tower', 'Dinner at Caf\u00e9 Murano': 'murano', 'Westminster Abbey': 'abbey',
+    'Pre-theatre dinner at Rules': 'rules', 'Dinner at Hawksmoor Seven Dials': 'hawks', 'Dinner at Tayyabs': 'tayyabs',
+    'Jack the Ripper tour': 'ripper', 'Farewell dinner at J Sheekey': 'sheekey', 'Rowan Live': 'rowan'
+  };
+  function bookingFor(s) {
+    var id = BOOK_BY_TITLE[s.title];
+    if (!id) return null;
+    for (var i = 0; i < BOOKINGS.length; i++) if (BOOKINGS[i].id === id) return BOOKINGS[i];
+    return null;
+  }
 
   var START = new Date(2027, 1, 20);
   var KIND = {
@@ -779,6 +826,8 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     pin: 'M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11zM12 10.5a2 2 0 1 0 0-.01',
     book: 'M4 19.5V5a2 2 0 0 1 2-2h14v15H6a2 2 0 0 0-2 2 2 2 0 0 0 2 2h14M8 7.5h8',
     check: 'M5 12.5l4.5 4.5L19 7.5',
+    ticket: 'M3 8h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4zM14 8v10',
+    out: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
     list: 'M9 6h11M9 12h11M9 18h11M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17'
   };
 
@@ -882,14 +931,11 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     var n = tripDay();
     var d = DAYS[i];
     if (n < 0) {
-      if (i !== 0 && bookedCount() === BOOKINGS.length) return null;
       var left = BOOKINGS.length - bookedCount();
       if (left === 0) return null;
-      return el('section', { class: 'next', style: '--c:' + d.c },
-        el('p', { class: 'eyebrow', text: 'Before you go' }),
-        el('h3', { text: left + (left === 1 ? ' booking' : ' bookings') + ' left to make' }),
-        el('p', { class: 'meta', text: bookedCount() + ' of ' + BOOKINGS.length + ' done. Restaurants and timed tickets go first.' }),
-        el('div', { class: 'row' }, el('button', { type: 'button', class: 'bigbtn', onclick: openBookings }, icon(ICON.list), 'Open checklist')));
+      return el('button', { type: 'button', class: 'bookchip', onclick: openBookings }, icon(ICON.list),
+        el('span', { text: left + (left === 1 ? ' booking' : ' bookings') + ' to make' }),
+        el('b', { text: 'Open' }));
     }
     if (n !== i || n >= DAYS.length) return null;
     var idx = -1;
@@ -974,7 +1020,11 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
       var cardEl = el('div', { class: 'card' },
         el('div', { class: 'titlerow' }, el('h3', { text: s.title }), tick),
         s.note ? el('p', { class: 'note', text: s.note }) : null,
-        s.tags && s.tags.length ? el('div', { class: 'tags' }, s.tags.map(tagEl)) : null);
+        null);
+      var bk = bookingFor(s);
+      var tagList = (s.tags || []).filter(function (t) { return t !== '!Book ahead' && t !== '+Tickets booked'; });
+      if (bk && booked[bk.id]) tagList = ['+Booked'].concat(tagList);
+      if (tagList.length) cardEl.appendChild(el('div', { class: 'tags' }, tagList.map(tagEl)));
 
       // First stop of the day shows how to get there in its own note line
       if (s.go && k === 0) {
@@ -983,6 +1033,9 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
 
       // 3. Compact map buttons + History
       var actions = el('div', { class: 'actions' }, placeLinks(s, false));
+      if (bk && !booked[bk.id] && bk.u) {
+        actions.appendChild(el('a', { class: 'pin book', href: bk.u, target: '_blank', rel: 'noopener', 'aria-label': 'Book ' + bk.t }, icon(ICON.ticket), 'Book'));
+      }
       var infoBox = null;
       if (s.info && s.info.length) {
         var isOpen = !!openInfo[key];
@@ -1031,7 +1084,8 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
         show(current, false);
       });
       ul.appendChild(el('li', { class: 'bitem' + (on ? ' done' : '') }, t,
-        el('div', { class: 'bt' }, el('h4', { text: b.t }), el('p', { text: b.d }))));
+        el('div', { class: 'bt' }, el('h4', { text: b.t }), el('p', { text: b.d })),
+        b.u && !on ? el('a', { class: 'blink', href: b.u, target: '_blank', rel: 'noopener', 'aria-label': 'Book ' + b.t }, 'Book', icon(ICON.out)) : null));
     });
   }
   function openBookings() {
