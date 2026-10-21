@@ -1,6 +1,1 @@
-{
-  "route": "DEN-LHR round trip, out 2027-02-19, back 2027-02-28",
-  "adults": 2,
-  "currency": "USD",
-  "history": []
-}
+{"route": "DEN-LHR round trip, out 2027-02-19, back 2027-02-28", "adults": 2, "currency": "USD", "history": [{"date": "2026-10-21", "price": 1953, "airline": "United (out) / Lufthansa (return)", "stops": 1, "url": "https://www.google.com/travel/flights/search?tfs=CBwQAhoeEgoyMDI3LTAyLTE5agcIARIDREVOcgcIARIDTEhSGh4SCjIwMjctMDItMjhqBwgBEgNMSFJyBwgBEgNERU5AAUABSAFwAYIBCwj___________8BmAEB&curr=USD&hl=en"}]}
