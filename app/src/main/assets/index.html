@@ -1336,7 +1336,8 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     if (ago >= 2) return { text: 'Not updated since ' + shortDate(d), stale: true };
     return { text: ago === 1 ? 'Checked yesterday' : 'Checked today', stale: false };
   }
-  function priceHistory() { return prices ? prices.history.filter(function (e) { return e && e.price > 0; }) : []; }
+  // Nonstop fares only: any saved price with a stop is ignored.
+  function priceHistory() { return prices ? prices.history.filter(function (e) { return e && e.price > 0 && !(e.stops > 0); }) : []; }
 
   var priceHistOpen = false;
   function priceRow() {

@@ -211,18 +211,24 @@ final class PriceCheck {
         return entry(json, 2);
     }
 
-    /** The nth entry from the end of the history list (1 is the newest). */
+    /** The nth nonstop price from the end of the history list (1 is the newest). Fares with a stop are ignored. */
     private static JSONObject entry(String json, int fromEnd) {
         if (json == null) {
             return null;
         }
         try {
             JSONArray h = new JSONObject(json).optJSONArray("history");
-            if (h == null || h.length() < fromEnd) {
+            if (h == null) {
                 return null;
             }
-            JSONObject e = h.getJSONObject(h.length() - fromEnd);
-            return e.optInt("price") > 0 ? e : null;
+            int seen = 0;
+            for (int i = h.length() - 1; i >= 0; i--) {
+                JSONObject e = h.optJSONObject(i);
+                if (e != null && e.optInt("price") > 0 && e.optInt("stops", 0) == 0 && ++seen == fromEnd) {
+                    return e;
+                }
+            }
+            return null;
         } catch (Exception e) {
             return null;
         }
