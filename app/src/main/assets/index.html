@@ -203,7 +203,36 @@ main { padding-block: 18px 110px; }
 .pricechip .chg.down { color: var(--ok); }
 .pricechip .chg.up { color: var(--signal); }
 .pricechip .when { font-size: 12px; color: var(--muted); padding-left: 10px; border-left: 1px solid var(--line); }
+.pricechip .for, .pricechip .chg, .pricechip .when { white-space: nowrap; }
+.stalewarn { flex: 1 1 100%; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--signal); }
+.stalewarn svg.i { width: 16px; height: 16px; }
+.pricehist {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px 0 11px;
+  border: 1.5px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink);
+  font-size: 13.5px; font-weight: 700; cursor: pointer;
+}
+.pricehist svg.i { width: 16px; height: 16px; color: var(--accent); }
+.pricehist[aria-expanded="true"] { background: var(--soft); border-color: var(--soft); }
+.histpanel { flex: 1 1 100%; padding: 12px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.histpanel .lbl { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.histchart { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 8px; align-items: stretch; }
+.histchart .ax { display: flex; flex-direction: column; justify-content: space-between; font-family: var(--f-mono); font-size: 11px; color: var(--muted); text-align: right; }
+.histchart svg { width: 100%; height: 90px; display: block; overflow: visible; }
+.histchart .xs { grid-column: 2; display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+.histlist { list-style: none; margin: 10px 0 0; padding: 0; font-size: 13.5px; }
+.histlist li { display: flex; justify-content: space-between; padding: 5px 0; border-top: 1px solid var(--line); }
+.histlist b { font-family: var(--f-mono); font-weight: 500; font-variant-numeric: tabular-nums; }
 .pricechip .none { font-size: 14px; font-weight: 700; color: var(--accent); }
+
+/* Your flights form */
+.flform { display: grid; gap: 14px; }
+.flform fieldset { margin: 0; padding: 0; border: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.flform legend { margin-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.flform label { display: grid; gap: 3px; font-size: 12px; color: var(--muted); min-width: 0; }
+.flform input { width: 100%; height: 42px; padding: 0 8px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; font-size: 15px; }
+.flform input:focus { border-color: var(--accent); outline: none; }
+.flform .hint { margin: 0; font-size: 13px; color: var(--muted); }
+.flform .row { display: flex; gap: 8px; }
 
 /* Day head */
 .kicker { margin: 0; font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.04em; color: var(--muted); }
@@ -539,6 +568,33 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   <ul class="blist" id="bookList"></ul>
 </div>
 
+<div class="scrim" id="flScrim" hidden></div>
+<div class="sheet wrap" id="flSheet" role="dialog" aria-modal="true" aria-labelledby="flTitle" hidden>
+  <div class="sheethead">
+    <h2 id="flTitle">Your flights</h2>
+    <button class="xbtn" id="flClose" type="button" aria-label="Close">&times;</button>
+  </div>
+  <form class="flform" id="flForm">
+    <p class="hint" id="flHint">Add your flight numbers and times so they show in the trip.</p>
+    <fieldset>
+      <legend>Out &middot; Fri Feb 19, Denver to London</legend>
+      <label>Flight <input name="outFlight" autocomplete="off" placeholder="UA 900"></label>
+      <label>Departs <input name="outDeparts" type="time"></label>
+      <label>Lands (Feb 20) <input name="outArrives" type="time"></label>
+    </fieldset>
+    <fieldset>
+      <legend>Back &middot; Sun Feb 28, London to Denver</legend>
+      <label>Flight <input name="backFlight" autocomplete="off" placeholder="UA 901"></label>
+      <label>Departs <input name="backDeparts" type="time"></label>
+      <label>Lands <input name="backArrives" type="time"></label>
+    </fieldset>
+    <div class="row">
+      <button class="bigbtn" type="submit">Save</button>
+      <button class="bigbtn ghost" type="button" id="flSkip">Not now</button>
+    </div>
+  </form>
+</div>
+
 <script>
 (function () {
   'use strict';
@@ -843,7 +899,9 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     plane: 'M10.5 13.5 3 11l1.5-1.5 8 1 4-4.5a2 2 0 0 1 3 3L15 13l1 8-1.5 1.5L12 15l-3 3v2.5L7.5 22l-1-3.5L3 17.5 4.5 16H7l3.5-2.5z',
     ticket: 'M3 8h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4zM14 8v10',
     out: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
-    list: 'M9 6h11M9 12h11M9 18h11M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17'
+    list: 'M9 6h11M9 12h11M9 18h11M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17',
+    trend: 'M3 17l5.5-5.5 4 4L21 7M15 7h6v6',
+    alert: 'M12 3.5 2.5 20h19zM12 10v4.5M12 17.5h.01'
   };
 
   // Storage helpers: the app works without them.
@@ -944,9 +1002,9 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   // 1. Next-up card
   function nextCard(i) {
     var n = tripDay();
-    var d = DAYS[i];
+    var d = dayView(i);
     if (n < 0) {
-      return booked.flights ? null : el('div', { class: 'chiprow' }, priceChip());
+      return booked.flights ? null : priceRow();
     }
     if (n !== i || n >= DAYS.length) return null;
     var idx = -1;
@@ -975,7 +1033,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   function show(i, userTap) {
     current = i;
     save('ldn.day', i);
-    var d = DAYS[i];
+    var d = dayView(i);
     var dt = dateOf(i);
     pills.forEach(function (p, k) { if (k === i) p.setAttribute('aria-current', 'true'); else p.removeAttribute('aria-current'); });
     if (userTap) {
@@ -1080,6 +1138,81 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
       el('a', { class: 'pin', href: dirUrl(HOTEL, 'transit'), target: '_blank', rel: 'noopener' }, icon(ICON.pin), 'Back to the hotel')));
   }
 
+  // Booked flight details: entered when the flights are ticked off, prefilled from the morning price check.
+  // { out: { flight, departs, arrives }, back: { ... } }, times as 24-hour "HH:MM".
+  var myFlights = load('ldn.flights', null);
+  function clock(hhmm) {
+    var m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || '');
+    if (!m) return null;
+    var h = +m[1];
+    return (h % 12 || 12) + ':' + m[2] + (h < 12 ? ' AM' : ' PM');
+  }
+  function haveFlights() { return booked.flights && myFlights && (myFlights.out || myFlights.back); }
+  function dayView(i) {
+    var d = DAYS[i];
+    if (!haveFlights()) return d;
+    var out = myFlights.out || {}, back = myFlights.back || {};
+    var stops = d.stops.map(function (s) {
+      if (i === 0 && s.title === 'Land at Heathrow') {
+        var c = Object.assign({}, s);
+        if (clock(out.arrives)) c.time = clock(out.arrives);
+        if (out.flight) c.note = out.flight + ' from Denver' + (clock(out.departs) ? ', left Feb 19 at ' + clock(out.departs) : '') + '. ' + s.note;
+        return c;
+      }
+      return s;
+    });
+    if (i === DAYS.length - 1 && (back.flight || back.departs)) {
+      stops.push({ time: clock(back.departs) || '', kind: 'travel', title: 'Flight home' + (back.flight ? ' \u00B7 ' + back.flight : ''),
+        note: 'Heathrow to Denver' + (clock(back.arrives) ? ', landing at ' + clock(back.arrives) + ' Denver time' : '') + '.' });
+    }
+    return Object.assign({}, d, { stops: stops });
+  }
+  function flightSummary() {
+    if (!myFlights) return null;
+    var parts = [];
+    if (myFlights.out && myFlights.out.flight) parts.push('Out ' + myFlights.out.flight + (clock(myFlights.out.departs) ? ' ' + clock(myFlights.out.departs) : ''));
+    if (myFlights.back && myFlights.back.flight) parts.push('Back ' + myFlights.back.flight + (clock(myFlights.back.departs) ? ' ' + clock(myFlights.back.departs) : ''));
+    return parts.length ? parts.join(' \u00B7 ') : null;
+  }
+  function openFlightForm() {
+    closeBookings();
+    var f = $('flForm');
+    var src = myFlights, fromCheck = false;
+    if (!src) {
+      var h = priceHistory(), last = h[h.length - 1];
+      if (last && (last.out || last.back)) { src = { out: last.out, back: last.back }; fromCheck = true; }
+    }
+    src = src || {};
+    ['out', 'back'].forEach(function (leg) {
+      var v = src[leg] || {};
+      f.elements[leg + 'Flight'].value = v.flight || '';
+      f.elements[leg + 'Departs'].value = v.departs || '';
+      f.elements[leg + 'Arrives'].value = v.arrives || '';
+    });
+    $('flHint').textContent = fromCheck
+      ? 'Filled in from the last flight the price check found. Change anything that differs from what you booked.'
+      : 'Add your flight numbers and times so they show in the trip.';
+    $('flSheet').hidden = false; $('flScrim').hidden = false;
+  }
+  function closeFlightForm() { $('flSheet').hidden = true; $('flScrim').hidden = true; }
+  $('flForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var f = $('flForm');
+    function leg(k) {
+      var v = { flight: f.elements[k + 'Flight'].value.trim().toUpperCase(), departs: f.elements[k + 'Departs'].value, arrives: f.elements[k + 'Arrives'].value };
+      return v.flight || v.departs || v.arrives ? v : null;
+    }
+    myFlights = { out: leg('out'), back: leg('back') };
+    if (!myFlights.out && !myFlights.back) myFlights = null;
+    save('ldn.flights', myFlights);
+    closeFlightForm();
+    renderBookCount();
+    show(current, false);
+  });
+  $('flSkip').addEventListener('click', closeFlightForm);
+  $('flClose').addEventListener('click', closeFlightForm);
+  $('flScrim').addEventListener('click', closeFlightForm);
+
   // 7. Bookings checklist
   function renderBookings() {
     var ul = $('bookList');
@@ -1090,14 +1223,18 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
       t.addEventListener('click', function () {
         if (booked[b.id]) delete booked[b.id]; else booked[b.id] = true;
         save('ldn.book', booked);
-        if (b.id === 'flights') syncFlightsBooked();
+        if (b.id === 'flights') {
+          syncFlightsBooked();
+          if (booked.flights) { renderBookCount(); show(current, false); openFlightForm(); return; }
+        }
         renderBookings();
         renderBookCount();
         show(current, false);
       });
       ul.appendChild(el('li', { class: 'bitem' + (on ? ' done' : '') }, t,
-        el('div', { class: 'bt' }, el('h4', { text: b.t }), el('p', { text: b.d })),
-        b.u && !on ? el('a', { class: 'blink', href: b.u, target: '_blank', rel: 'noopener', 'aria-label': 'Book ' + b.t }, 'Book', icon(ICON.out)) : null));
+        el('div', { class: 'bt' }, el('h4', { text: b.t }), el('p', { text: b.id === 'flights' && on && flightSummary() ? flightSummary() : b.d })),
+        b.u && !on ? el('a', { class: 'blink', href: b.u, target: '_blank', rel: 'noopener', 'aria-label': 'Book ' + b.t }, 'Book', icon(ICON.out))
+          : b.id === 'flights' && on ? el('button', { type: 'button', class: 'blink', style: 'border:0;cursor:pointer', onclick: openFlightForm, 'aria-label': 'Edit flight details' }, myFlights ? 'Edit' : 'Add details') : null));
     });
   }
   function openBookings() {
@@ -1122,17 +1259,88 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n); }
     catch (e) { return '$' + Math.round(n); }
   }
-  function checkedText(iso) {
+  function isoDate(iso) {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
-    if (!m) return null;
-    var d = new Date(+m[1], m[2] - 1, +m[3]);
-    var ago = Math.round((dayMs(new Date()) - dayMs(d)) / 86400000);
-    if (ago === 0) return 'Checked today';
-    if (ago === 1) return 'Checked yesterday';
-    return 'Checked ' + d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return m ? new Date(+m[1], m[2] - 1, +m[3]) : null;
   }
+  function shortDate(d) { return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
+  // When the price was last checked. Two days or more without an update means the morning task has stopped.
+  function checkedText(iso) {
+    var d = isoDate(iso);
+    if (!d) return null;
+    var ago = Math.round((dayMs(new Date()) - dayMs(d)) / 86400000);
+    if (ago >= 2) return { text: 'Not updated since ' + shortDate(d), stale: true };
+    return { text: ago === 1 ? 'Checked yesterday' : 'Checked today', stale: false };
+  }
+  function priceHistory() { return prices ? prices.history.filter(function (e) { return e && e.price > 0; }) : []; }
+
+  var priceHistOpen = false;
+  function priceRow() {
+    var h = priceHistory();
+    var row = el('div', { class: 'chiprow' }, priceChip());
+    var when = h.length ? checkedText(h[h.length - 1].date) : null;
+    if (when && when.stale) {
+      row.appendChild(el('p', { class: 'stalewarn', style: 'margin:0' }, icon(ICON.alert), 'Price n' + when.text.slice(1) + '. Check the morning task in Claude.'));
+    }
+    if (h.length < 2) return row;
+    var btn = el('button', { type: 'button', class: 'pricehist', 'aria-expanded': priceHistOpen ? 'true' : 'false' }, icon(ICON.trend), 'History');
+    var panel = histPanel(h);
+    panel.hidden = !priceHistOpen;
+    btn.addEventListener('click', function () {
+      priceHistOpen = !priceHistOpen;
+      panel.hidden = !priceHistOpen;
+      btn.setAttribute('aria-expanded', priceHistOpen ? 'true' : 'false');
+    });
+    row.appendChild(btn);
+    row.appendChild(panel);
+    return row;
+  }
+  // Line chart of the last 30 checks, then the last 7 as a list (newest first).
+  function histPanel(h) {
+    var pts = h.slice(-30);
+    var lo = Math.min.apply(null, pts.map(function (e) { return e.price; }));
+    var hi = Math.max.apply(null, pts.map(function (e) { return e.price; }));
+    var span = hi - lo || 1;
+    var W = 300, H = 90, pad = 6;
+    var xy = pts.map(function (e, i) {
+      var x = pts.length === 1 ? W / 2 : (i / (pts.length - 1)) * W;
+      var y = pad + (1 - (e.price - lo) / span) * (H - 2 * pad);
+      return [x, y];
+    });
+    var svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.setAttribute('preserveAspectRatio', 'none');
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', 'Price over the last ' + pts.length + ' checks, from ' + dollars(lo) + ' to ' + dollars(hi));
+    var line = document.createElementNS(SVGNS, 'polyline');
+    line.setAttribute('points', xy.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' '));
+    line.setAttribute('fill', 'none');
+    line.setAttribute('stroke', 'var(--accent)');
+    line.setAttribute('stroke-width', '2.5');
+    line.setAttribute('stroke-linejoin', 'round');
+    line.setAttribute('vector-effect', 'non-scaling-stroke');
+    svg.appendChild(line);
+    var end = xy[xy.length - 1];
+    var dot = document.createElementNS(SVGNS, 'circle');
+    dot.setAttribute('cx', end[0]); dot.setAttribute('cy', end[1]); dot.setAttribute('r', '4');
+    dot.setAttribute('fill', 'var(--accent)');
+    dot.setAttribute('vector-effect', 'non-scaling-stroke');
+    svg.appendChild(dot);
+    var first = isoDate(pts[0].date), lastD = isoDate(pts[pts.length - 1].date);
+    return el('div', { class: 'histpanel' },
+      el('span', { class: 'lbl', text: 'Price history \u00B7 for 2' }),
+      el('div', { class: 'histchart' },
+        el('div', { class: 'ax' }, el('span', { text: dollars(hi) }), el('span', { text: dollars(lo) })),
+        svg,
+        el('div', { class: 'xs' }, el('span', { text: first ? shortDate(first) : '' }), el('span', { text: lastD ? shortDate(lastD) : '' }))),
+      el('ul', { class: 'histlist' }, h.slice(-7).reverse().map(function (e) {
+        var d = isoDate(e.date);
+        return el('li', {}, el('span', { text: d ? d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : e.date }), el('b', { text: dollars(e.price) }));
+      })));
+  }
+
   function priceChip() {
-    var h = prices ? prices.history.filter(function (e) { return e && e.price > 0; }) : [];
+    var h = priceHistory();
     var last = h[h.length - 1], prev = h[h.length - 2];
     var href = last && /^https:\/\//.test(last.url || '') ? last.url : FLIGHTS.google;
     var plane = el('span', { class: 'plane' }, icon(ICON.plane));
@@ -1145,10 +1353,10 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     var when = checkedText(last.date);
     var label = 'Flights ' + dollars(last.price) + ' for 2' + (last.airline ? ', ' + last.airline : '')
       + (prev ? (diff < 0 ? ', down ' + dollars(-diff) : diff > 0 ? ', up ' + dollars(diff) : ', no change') : '')
-      + (when ? ', ' + when.toLowerCase() : '') + '. Open this fare.';
+      + (when ? ', ' + when.text.charAt(0).toLowerCase() + when.text.slice(1) : '') + '. Open this fare.';
     return el('a', { class: 'pricechip', href: href, target: '_blank', rel: 'noopener', 'aria-label': label },
       plane, el('span', { class: 'amt', text: dollars(last.price) }), el('span', { class: 'for', text: 'for 2' }), chg,
-      when ? el('span', { class: 'when', text: when }) : null);
+      when && !when.stale ? el('span', { class: 'when', text: when.text }) : null);
   }
   window.onPrices = function (json) { setPrices(json); show(current, false); };
   // Once the flights are booked the price chip hides (see nextCard) and the app stops price checks and notifications.
@@ -1213,7 +1421,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     if (b) press(b.getAttribute('data-k'));
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeCv(); closeBookings(); return; }
+    if (e.key === 'Escape') { closeCv(); closeBookings(); closeFlightForm(); return; }
     if (pop.hidden || e.target === rateEl) return;
     if (/^[0-9]$/.test(e.key) || e.key === '.') press(e.key);
     else if (e.key === 'Backspace') press('back');
@@ -1265,10 +1473,10 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   // Swipe left for the next day, right for the previous day.
   var swipeX = null, swipeY = 0;
   function swipeIgnored(t) {
-    return !t || !t.closest || !!t.closest('.strip, #cvpop, #toast, #bookSheet, input');
+    return !t || !t.closest || !!t.closest('.strip, #cvpop, #toast, #bookSheet, #flSheet, input');
   }
   document.addEventListener('touchstart', function (e) {
-    if (e.touches.length !== 1 || !pop.hidden || !$('bookSheet').hidden || swipeIgnored(e.target)) { swipeX = null; return; }
+    if (e.touches.length !== 1 || !pop.hidden || !$('bookSheet').hidden || !$('flSheet').hidden || swipeIgnored(e.target)) { swipeX = null; return; }
     swipeX = e.touches[0].clientX;
     swipeY = e.touches[0].clientY;
   }, { passive: true });
