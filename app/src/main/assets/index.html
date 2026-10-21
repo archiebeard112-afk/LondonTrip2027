@@ -4,10 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>London Trip Guide</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Overpass:wght@400;600;700&family=Overpass+Mono:wght@500&display=swap">
 <style>
+/* Fonts ship inside the app (assets/fonts) so the guide looks the same with no signal. */
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url(fonts/barlow-condensed-600.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url(fonts/barlow-condensed-700.woff2) format('woff2'); }
+@font-face { font-family: 'Overpass'; font-style: normal; font-weight: 400 700; font-display: swap; src: url(fonts/overpass.woff2) format('woff2'); }
+@font-face { font-family: 'Overpass Mono'; font-style: normal; font-weight: 500; font-display: swap; src: url(fonts/overpass-mono-500.woff2) format('woff2'); }
 /* Layout: compact sticky header + day strip; a "next up" card; then a timeline where each stop carries
    a type icon on the rail, travel legs sit between stops, and details (history, map buttons) stay compact. */
 :root {
@@ -86,6 +88,7 @@ svg.i { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentCo
 }
 .brand p { margin: 3px 0 0; font-size: 12px; color: var(--muted); letter-spacing: 0.03em; }
 .brand p b { color: var(--accent); font-weight: 700; }
+.brand p .off { color: var(--signal); font-weight: 700; }
 .hbtns { display: flex; gap: 6px; flex: 0 0 auto; }
 .hbtn {
   display: inline-flex;
@@ -230,6 +233,31 @@ main { padding-block: 18px 110px; }
 .summary span { display: inline-flex; align-items: center; gap: 5px; }
 .summary svg.i { width: 15px; height: 15px; }
 .summary .prog { margin-left: auto; font-weight: 700; color: var(--c); }
+
+/* Weather on each day */
+.wx { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 10px; font-size: 14px; color: var(--muted); }
+.wx svg.i { width: 22px; height: 22px; color: var(--accent); }
+.wx b { color: var(--ink); font-family: var(--f-display); font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.wx .c { font-size: 12.5px; }
+.wx .wet { flex: 1 1 100%; margin: 0; font-size: 13px; font-weight: 700; color: var(--signal); }
+.wx.far { flex-wrap: nowrap; align-items: flex-start; font-size: 13px; }
+.wx.far svg.i { width: 18px; height: 18px; color: var(--muted); }
+
+/* Live Tube status */
+.tubebtn { border: 0; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.tubebtn .tsh { display: inline-block; padding: 0 8px; border: 1.5px solid var(--line); border-radius: 999px; font-size: 11.5px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+.tubebtn[aria-expanded="true"] .tsh { background: var(--soft); border-color: var(--soft); }
+.note .tubebtn { padding: 0; color: inherit; }
+.tstat { grid-column: 3; margin: 0 0 8px 10px; padding: 10px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: 13.5px; }
+.card > .tstat { margin: 8px 0 0; }
+.tline { display: grid; grid-template-columns: 6px minmax(0, 1fr); gap: 0 10px; padding: 4px 0; }
+.tline + .tline { border-top: 1px solid var(--line); }
+.tline .bar { border-radius: 3px; background: var(--lc); box-shadow: 0 0 0 1px var(--line); }
+.tline b { font-weight: 700; }
+.tline .st { font-weight: 700; color: var(--signal); }
+.tline .st.good { color: var(--ok); }
+.tline p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+.tstat .src { margin: 6px 0 0; font-size: 11.5px; color: var(--muted); }
 
 /* Timeline */
 .stops { list-style: none; margin: 16px 0 0; padding: 0; }
@@ -378,6 +406,13 @@ main { padding-block: 18px 110px; }
 .bitem h4 { margin: 0; font-size: 16px; }
 .bitem p { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); }
 .bitem.done h4 { color: var(--muted); text-decoration: line-through; }
+.tabs { display: flex; gap: 6px; margin-top: 12px; }
+.tab { flex: 1; min-height: 40px; border: 1.5px solid var(--line); border-radius: 999px; background: transparent; font-size: 14px; font-weight: 700; cursor: pointer; }
+.tab .n { font-family: var(--f-mono); font-size: 12px; font-weight: 500; color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.tab[aria-selected="true"] .n { color: var(--accent-ink); }
+.pgroup { margin: 16px 0 2px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.bitem a.more { color: var(--accent); font-weight: 700; }
 
 /* Converter */
 .fab {
@@ -480,12 +515,12 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     <div class="top-row">
       <div class="brand">
         <h1>London</h1>
-        <p>Feb 20&ndash;28, 2027 &middot; <b id="count">&nbsp;</b></p>
+        <p>Feb 20&ndash;28, 2027 &middot; <b id="count">&nbsp;</b><span class="off" id="net" hidden> &middot; Offline</span></p>
       </div>
       <div class="hbtns">
         <button class="hbtn" id="bookBtn" type="button" aria-haspopup="dialog">
           <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17"/></svg>
-          <span class="lbl">Bookings</span> <span class="n" id="bookCount"></span>
+          <span class="lbl">To do</span> <span class="n" id="bookCount"></span>
         </button>
         <button class="hbtn" id="upd" type="button" hidden>
           <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>
@@ -552,8 +587,18 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     <h2 id="bookTitle">Before you go</h2>
     <button class="xbtn" id="bookClose" type="button" aria-label="Close bookings">&times;</button>
   </div>
-  <p class="sub">Tick each one off once it&rsquo;s booked or confirmed.</p>
-  <ul class="blist" id="bookList"></ul>
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tabBook" type="button" role="tab" aria-controls="bookPane">Bookings <span class="n" id="tabBookN"></span></button>
+    <button class="tab" id="tabPrep" type="button" role="tab" aria-controls="prepPane">Packing &amp; prep <span class="n" id="tabPrepN"></span></button>
+  </div>
+  <div id="bookPane" role="tabpanel" aria-labelledby="tabBook">
+    <p class="sub">Tick each one off once it&rsquo;s booked or confirmed.</p>
+    <ul class="blist" id="bookList"></ul>
+  </div>
+  <div id="prepPane" role="tabpanel" aria-labelledby="tabPrep" hidden>
+    <p class="sub">Things to sort out and pack before you fly on Feb 19.</p>
+    <div id="prepList"></div>
+  </div>
 </div>
 
 <script>
@@ -822,11 +867,11 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     { id: 'flights', t: 'Round-trip flights', d: 'DEN \u21C4 LHR \u00B7 Feb 19\u201328 \u00B7 2 adults', u: FLIGHTS.google },
     { id: 'rowan', t: 'Rowan Live', d: 'Wed Feb 24, 7:30 PM \u00B7 Gillian Lynne Theatre', pre: true },
     { id: 'tower', t: 'Tower of London tickets', d: 'Mon Feb 22 \u00B7 confirm 2027 winter hours', u: 'https://www.hrp.org.uk/tower-of-london/visit/tickets-and-prices/' },
-    { id: 'murano', t: 'Caf\u00e9 Murano', d: 'Mon Feb 22, 6:30 PM \u00B7 OpenTable', u: 'https://www.opentable.co.uk/cafe-murano-covent-garden' },
+    { id: 'murano', t: 'Caf\u00e9 Murano', d: 'Mon Feb 22, 6:30 PM \u00B7 call 020 7240 3654 (no longer on OpenTable)', u: 'tel:+442072403654' },
     { id: 'abbey', t: 'Westminster Abbey', d: 'Tue Feb 23, 9:30 AM slot', u: 'https://www.westminster-abbey.org/visit-us/tickets' },
     { id: 'rules', t: 'Rules', d: 'Wed Feb 24, 5:30 PM pre-theatre', u: 'https://rules.co.uk/' },
     { id: 'hawks', t: 'Hawksmoor Seven Dials', d: 'Thu Feb 25, 6:30 PM', u: 'https://thehawksmoor.com/locations/seven-dials' },
-    { id: 'tayyabs', t: 'Tayyabs', d: 'Fri Feb 26, 5:00 PM \u00B7 no booking site found, so this searches', u: 'https://www.google.com/search?q=Tayyabs+Whitechapel+book+a+table' },
+    { id: 'tayyabs', t: 'Tayyabs', d: 'Fri Feb 26, 5:00 PM \u00B7 online, or call 020 7247 9543', u: 'https://www.tayyabs.co.uk' },
     { id: 'ripper', t: 'Jack the Ripper tour', d: 'Fri Feb 26, 7:00 PM \u00B7 note the meeting point', u: 'https://www.jack-the-ripper-tour.com' },
     { id: 'sheekey', t: 'J Sheekey', d: 'Sat Feb 27, 6:30 PM \u00B7 OpenTable', u: 'https://www.opentable.com/j-sheekey-the-restaurant' }
   ];
@@ -956,7 +1001,12 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   }
 
   function bookedCount() { return BOOKINGS.filter(function (b) { return booked[b.id]; }).length; }
-  function renderBookCount() { $('bookCount').textContent = bookedCount() + '/' + BOOKINGS.length; }
+  // The header counts bookings and packing together; each tab in the sheet shows its own count.
+  function renderBookCount() {
+    $('bookCount').textContent = (bookedCount() + packedCount()) + '/' + (BOOKINGS.length + prepTotal);
+    $('tabBookN').textContent = bookedCount() + '/' + BOOKINGS.length;
+    $('tabPrepN').textContent = packedCount() + '/' + prepTotal;
+  }
 
   // 1. Next-up card
   function nextCard(i) {
@@ -1029,6 +1079,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
       el('p', { class: 'kicker', text: 'DAY ' + (i + 1) + ' · ' + dt.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }).toUpperCase() }),
       el('h2', { text: d.t }),
       el('p', { class: 'lede', text: d.lede }),
+      weatherLine(i),
       summary));
 
     var list = el('ol', { class: 'stops' });
@@ -1038,11 +1089,17 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
       var li = el('li', { class: 'stop' + (done[key] ? ' done' : ''), style: '--k:' + kd.col });
 
       // 2. Travel leg between stops
+      // Tube legs: tap for live status of the lines named in them
+      var lines = s.go && s.go[0] === 'tube' ? tubeLines(s.go[1]) : [];
       if (s.go && k > 0) {
-        li.appendChild(el('div', { class: 'leg' },
-          el('div', { class: 'lt' }),
-          el('div', { class: 'lx' }, icon(s.go[0] === 'tube' ? ICON.tube : ICON.walk),
-            el('span', {}, el('b', { text: s.go[0] === 'tube' ? 'Tube' : 'Walk' }), ' · ' + s.go[1]))));
+        var legText = [icon(s.go[0] === 'tube' ? ICON.tube : ICON.walk),
+          el('span', {}, el('b', { text: s.go[0] === 'tube' ? 'Tube' : 'Walk' }), ' · ' + s.go[1], lines.length ? [' ', tubePill()] : null)];
+        if (lines.length) {
+          var ts = tubeToggle(key, lines, 'lx tubebtn', legText);
+          li.appendChild(el('div', { class: 'leg' }, el('div', { class: 'lt' }), ts.btn, ts.rail, ts.panel));
+        } else {
+          li.appendChild(el('div', { class: 'leg' }, el('div', { class: 'lt' }), el('div', { class: 'lx' }, legText)));
+        }
       }
 
       var tick = el('button', { type: 'button', class: 'tick', 'aria-pressed': done[key] ? 'true' : 'false', 'aria-label': 'Mark done: ' + s.title },
@@ -1063,7 +1120,14 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
 
       // First stop of the day shows how to get there in its own note line
       if (s.go && k === 0) {
-        cardEl.insertBefore(el('p', { class: 'note' }, (s.go[0] === 'tube' ? 'Tube: ' : 'Walk: ') + s.go[1]), cardEl.children[1] || null);
+        var first = el('p', { class: 'note' }, (s.go[0] === 'tube' ? 'Tube: ' : 'Walk: ') + s.go[1]);
+        cardEl.insertBefore(first, cardEl.children[1] || null);
+        if (lines.length) {
+          var ts0 = tubeToggle(key, lines, 'tubebtn', tubePill());
+          first.appendChild(document.createTextNode(' '));
+          first.appendChild(ts0.btn);
+          cardEl.insertBefore(ts0.panel, first.nextSibling);
+        }
       }
 
       // 3. Compact map buttons + History
@@ -1124,7 +1188,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     });
   }
   function openBookings() {
-    renderBookings();
+    setTab(sheetTab);
     $('bookSheet').hidden = false;
     $('bookScrim').hidden = false;
   }
@@ -1230,6 +1294,228 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     renderCv();
   });
 
+  // Network: in the Android app, weather and Tube status download through AndroidApp.getText; on the web, fetch.
+  var netWait = {}, netSeq = 0;
+  window.onNet = function (id, text) { var cb = netWait[id]; delete netWait[id]; if (cb) cb(text); };
+  function getJson(url, cb) {
+    function done(t) { var o = null; try { o = t ? JSON.parse(t) : null; } catch (e) { o = null; } cb(o); }
+    var a = window.AndroidApp;
+    if (a && typeof a.getText === 'function') { var id = 'n' + (++netSeq); netWait[id] = done; a.getText(url, id); return; }
+    if (!window.fetch) { cb(null); return; }
+    fetch(url, { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : null; }).then(done).catch(function () { cb(null); });
+  }
+  function online() { return navigator.onLine !== false; }
+  function renderNet() { $('net').hidden = online(); }
+  function clockTime(ms) { return new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }); }
+
+  // Weather: Open-Meteo's free 16-day forecast for Covent Garden, shown on each day once it's in range.
+  var WX_URL = 'https://api.open-meteo.com/v1/forecast?latitude=51.5115&longitude=-0.1240'
+    + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+    + '&temperature_unit=fahrenheit&timezone=Europe%2FLondon&forecast_days=16';
+  var WX_DAYS = 16;
+  var wx = load('ldn.wx', null); // { at, days: { 'YYYY-MM-DD': { code, hi, lo, rain } } }
+  var WX_ICON = {
+    sun: 'M12 7.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 1 0 0-9zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+    part: 'M8 2.5V4M3 7.5h1.5M4.5 4l1 1M11.5 4l-1 1M5.3 10A3 3 0 0 1 11 8.2M8 20h9a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.6-.4A3.75 3.75 0 0 0 8 20z',
+    cloud: 'M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.1 10.1 4.5 4.5 0 0 0 7 19z',
+    fog: 'M7 12h10a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.6-.4A3.75 3.75 0 0 0 7 12zM4 16h16M6 20h12',
+    rain: 'M7 14h10a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.6-.4A3.75 3.75 0 0 0 7 14zM8 17l-1 3M12 17l-1 3M16 17l-1 3',
+    snow: 'M7 14h10a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.6-.4A3.75 3.75 0 0 0 7 14zM8 18h.01M12 18h.01M16 18h.01M10 21h.01M14 21h.01',
+    storm: 'M7 14h10a3.5 3.5 0 0 0 .4-7 5 5 0 0 0-9.6-.4A3.75 3.75 0 0 0 7 14zM12.5 15l-2 3.5h3l-2 3.5'
+  };
+  // WMO weather codes, as Open-Meteo reports them.
+  function wxKind(c) {
+    if (c === 0) return ['sun', 'Clear'];
+    if (c <= 2) return ['part', 'Partly cloudy'];
+    if (c === 3) return ['cloud', 'Cloudy'];
+    if (c === 45 || c === 48) return ['fog', 'Fog'];
+    if (c >= 51 && c <= 57) return ['rain', 'Drizzle'];
+    if ((c >= 61 && c <= 67) || (c >= 80 && c <= 82)) return ['rain', c >= 80 ? 'Showers' : c >= 65 ? 'Heavy rain' : 'Rain'];
+    if ((c >= 71 && c <= 77) || c === 85 || c === 86) return ['snow', 'Snow'];
+    if (c >= 95) return ['storm', 'Thunderstorms'];
+    return ['cloud', 'Cloudy'];
+  }
+  function isoOf(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function toC(f) { return Math.round((f - 32) * 5 / 9); }
+  function weatherLine(i) {
+    var dt = dateOf(i);
+    var ahead = Math.round((dayMs(dt) - dayMs(new Date())) / 86400000);
+    var f = wx && wx.days && wx.days[isoOf(dt)];
+    if (f) {
+      var k = wxKind(f.code);
+      var row = el('div', { class: 'wx', 'aria-label': 'Forecast: ' + k[1] + ', high ' + f.hi + ', low ' + f.lo + ' Fahrenheit, ' + f.rain + ' percent chance of rain' },
+        icon(WX_ICON[k[0]]), el('b', { text: f.hi + '° / ' + f.lo + '°F' }), el('span', { class: 'c', text: toC(f.hi) + '° / ' + toC(f.lo) + '°C' }),
+        el('span', { text: k[1] + (f.rain != null ? ' · ' + f.rain + '% chance' : '') }));
+      if (Date.now() - wx.at > 12 * 3600000) row.appendChild(el('span', { class: 'c', text: 'as of ' + new Date(wx.at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }));
+      if (f.rain >= 60 && ahead >= 0) row.appendChild(el('p', { class: 'wet', text: 'Likely wet. Think about swapping with a drier day.' }));
+      return row;
+    }
+    if (ahead < WX_DAYS) return null;
+    var from = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() - (WX_DAYS - 1));
+    return el('div', { class: 'wx far' }, icon(WX_ICON.cloud),
+      el('span', { text: 'Forecast from ' + from.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + '. Late February is usually about 48° / 37°F (9° / 3°C).' }));
+  }
+  // Fetches when any trip day is within the forecast, at most every 3 hours.
+  function refreshWeather() {
+    var ahead = Math.round((dayMs(START) - dayMs(new Date())) / 86400000);
+    if (ahead >= WX_DAYS || ahead < -DAYS.length || !online()) return;
+    if (wx && Date.now() - wx.at < 3 * 3600000) return;
+    getJson(WX_URL, function (r) {
+      var d = r && r.daily;
+      if (!d || !d.time) return;
+      var days = {};
+      d.time.forEach(function (t, n) {
+        days[t] = { code: d.weather_code[n], hi: Math.round(d.temperature_2m_max[n]), lo: Math.round(d.temperature_2m_min[n]), rain: d.precipitation_probability_max[n] };
+      });
+      wx = { at: Date.now(), days: days };
+      save('ldn.wx', wx);
+      show(current, false);
+    });
+  }
+
+  // Live Tube status from TfL's free Unified API. The last answer is kept so it still shows with no signal.
+  var TFL_URL = 'https://api.tfl.gov.uk/Line/Mode/tube,elizabeth-line/Status';
+  var TUBE = {
+    bakerloo: ['Bakerloo', '#B36305'], central: ['Central', '#E32017'], circle: ['Circle', '#FFD300'], district: ['District', '#00782A'],
+    elizabeth: ['Elizabeth', '#6950A1'], jubilee: ['Jubilee', '#A0A5A9'], metropolitan: ['Metropolitan', '#9B0056'],
+    northern: ['Northern', '#000000'], piccadilly: ['Piccadilly', '#003688'], victoria: ['Victoria', '#0098D4']
+  };
+  var tube = load('ldn.tube', null); // { at, lines: { id: [{ s, reason }] } }
+  var tubeBusy = false, tubeFailed = false, tubePanels = [];
+  var openTube = {};
+  function tubeLines(text) {
+    if (!/\bline\b/i.test(text)) return [];
+    return Object.keys(TUBE).filter(function (id) { return new RegExp('\\b' + TUBE[id][0] + '\\b').test(text); });
+  }
+  function tubePill() { return el('span', { class: 'tsh', text: 'Line status' }); }
+  // A button that opens a live status panel for the given lines. content goes inside the button.
+  function tubeToggle(key, lines, cls, content) {
+    var isOpen = !!openTube[key];
+    var btn = el('button', { type: 'button', class: cls, 'aria-expanded': isOpen ? 'true' : 'false' }, content);
+    var panel = el('div', { class: 'tstat', 'aria-live': 'polite' });
+    var rail = el('div', { class: 'lt' });
+    panel.hidden = rail.hidden = !isOpen;
+    var entry = { panel: panel, lines: lines };
+    tubePanels.push(entry);
+    if (isOpen) renderTube(entry);
+    btn.addEventListener('click', function () {
+      var open = panel.hidden;
+      panel.hidden = rail.hidden = !open;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) { openTube[key] = true; renderTube(entry); refreshTube(); } else delete openTube[key];
+    });
+    return { btn: btn, panel: panel, rail: rail };
+  }
+  function renderTube(entry) {
+    var p = entry.panel;
+    p.textContent = '';
+    if (!tube) {
+      p.appendChild(el('p', { class: 'src', style: 'margin:0', text: tubeBusy ? 'Checking TfL…' : 'Couldn’t reach TfL. Try again when you have signal.' }));
+      return;
+    }
+    entry.lines.forEach(function (id) {
+      var st = tube.lines[id] || [];
+      var good = !st.length || st.every(function (x) { return x.s === 'Good Service'; });
+      var reasons = [];
+      st.forEach(function (x) { if (x.reason && reasons.indexOf(x.reason) < 0) reasons.push(x.reason); });
+      var names = [];
+      st.forEach(function (x) { if (names.indexOf(x.s) < 0) names.push(x.s); });
+      p.appendChild(el('div', { class: 'tline', style: '--lc:' + TUBE[id][1] },
+        el('span', { class: 'bar' }),
+        el('div', {}, el('b', { text: TUBE[id][0] + ' ' }), el('span', { class: 'st' + (good ? ' good' : ''), text: names.join(', ') || 'No information' }),
+          reasons.map(function (r) { return el('p', { text: r }); }))));
+    });
+    var age = Date.now() - tube.at;
+    p.appendChild(el('p', { class: 'src', text: tubeBusy ? 'Checking TfL…'
+      : (tubeFailed || age > 10 * 60000 ? 'Last checked ' + (age > 20 * 3600000 ? new Date(tube.at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' : '') + clockTime(tube.at) + (tubeFailed ? '. No signal right now.' : '') : 'TfL, ' + clockTime(tube.at)) }));
+  }
+  function renderTubePanels() {
+    tubePanels = tubePanels.filter(function (e) { return e.panel.isConnected; });
+    tubePanels.forEach(function (e) { if (!e.panel.hidden) renderTube(e); });
+  }
+  function refreshTube() {
+    if (tubeBusy || (tube && Date.now() - tube.at < 60000)) return;
+    tubeBusy = true;
+    renderTubePanels();
+    getJson(TFL_URL, function (r) {
+      tubeBusy = false;
+      tubeFailed = !Array.isArray(r);
+      if (!tubeFailed) {
+        var lines = {};
+        r.forEach(function (l) {
+          lines[l.id] = (l.lineStatuses || []).map(function (x) { return { s: x.statusSeverityDescription, reason: x.reason || '' }; });
+        });
+        tube = { at: Date.now(), lines: lines };
+        save('ldn.tube', tube);
+      }
+      renderTubePanels();
+    });
+  }
+
+  // Packing and prep list, in the Before you go sheet.
+  var PREP = [
+    ['Documents', [
+      { id: 'passport', t: 'Passports', d: 'Valid for your whole stay. Keep them in your carry-on.' },
+      { id: 'eta', t: 'UK ETA for each of you', d: '£20 each on the UK ETA app or gov.uk. Usually approved within a day, but allow 3 working days.', u: 'https://www.gov.uk/eta/apply' },
+      { id: 'insure', t: 'Travel insurance', d: 'Check it covers medical care abroad.' },
+      { id: 'confirm', t: 'Confirmations saved on your phone', d: 'Screenshot the flights, hotel, Rowan Live tickets and timed entry tickets in case there’s no signal.' }
+    ]],
+    ['Money and phone', [
+      { id: 'card', t: 'Contactless card or phone for each of you', d: 'Tap in and out on the Tube. Each person needs their own. A card with no foreign transaction fees saves about 3%.' },
+      { id: 'plan', t: 'Phone plan or eSIM for the UK', d: 'Check your carrier’s international pass, or buy a UK eSIM before you fly.' },
+      { id: 'maps', t: 'Download central London in Google Maps', d: 'Google Maps > your profile picture > Offline maps > Select your own map, then cover Zone 1. Shows the map, places and your location with no signal.' },
+      { id: 'appupd', t: 'Update this app before you fly', d: 'Tap Update at the top so the latest guide is on your phone. Everything in it works offline.' }
+    ]],
+    ['Power', [
+      { id: 'adapter', t: 'UK plug adapters (Type G)', d: 'Bring two or three. UK sockets are 230V: phone and laptop chargers are fine, but check hair dryers and straighteners.' },
+      { id: 'battery', t: 'Portable battery', d: 'Maps and photos drain phones on long days out.' }
+    ]],
+    ['Clothes', [
+      { id: 'rain', t: 'Waterproof jacket or small umbrella', d: 'Late February is about 37–48°F and often damp.' },
+      { id: 'shoes', t: 'Comfortable walking shoes', d: 'Most of the itinerary is on foot.' },
+      { id: 'warm', t: 'Hat, gloves and warm layers', d: 'For the evening Ripper tour and windy bridges.' },
+      { id: 'smart', t: 'Something smarter to wear', d: 'For Rules and Rowan Live on Wed Feb 24.' }
+    ]],
+    ['Health', [
+      { id: 'meds', t: 'Medicines in your carry-on', d: 'In their original packaging, with a few days spare.' }
+    ]]
+  ];
+  var packed = load('ldn.prep', {});
+  var prepTotal = PREP.reduce(function (n, g) { return n + g[1].length; }, 0);
+  function packedCount() { var n = 0; PREP.forEach(function (g) { g[1].forEach(function (x) { if (packed[x.id]) n++; }); }); return n; }
+  function renderPrep() {
+    var box = $('prepList');
+    box.textContent = '';
+    PREP.forEach(function (g) {
+      box.appendChild(el('h3', { class: 'pgroup', text: g[0] }));
+      box.appendChild(el('ul', { class: 'blist' }, g[1].map(function (x) {
+        var on = !!packed[x.id];
+        var t = el('button', { type: 'button', class: 'tick', 'aria-pressed': on ? 'true' : 'false', 'aria-label': (on ? 'Untick ' : 'Tick off: ') + x.t }, icon(ICON.check));
+        t.addEventListener('click', function () {
+          if (packed[x.id]) delete packed[x.id]; else packed[x.id] = true;
+          save('ldn.prep', packed);
+          renderPrep();
+          renderBookCount();
+        });
+        return el('li', { class: 'bitem' + (on ? ' done' : '') }, t,
+          el('div', { class: 'bt' }, el('h4', { text: x.t }), el('p', { text: x.d })),
+          x.u && !on ? el('a', { class: 'blink', href: x.u, target: '_blank', rel: 'noopener', 'aria-label': 'Open ' + x.t }, 'Open', icon(ICON.out)) : null);
+      })));
+    });
+  }
+  var sheetTab = load('ldn.tab', 'book');
+  function setTab(tab) {
+    sheetTab = tab === 'prep' ? 'prep' : 'book';
+    save('ldn.tab', sheetTab);
+    $('tabBook').setAttribute('aria-selected', sheetTab === 'book' ? 'true' : 'false');
+    $('tabPrep').setAttribute('aria-selected', sheetTab === 'prep' ? 'true' : 'false');
+    $('bookPane').hidden = sheetTab !== 'book';
+    $('prepPane').hidden = sheetTab !== 'prep';
+    if (sheetTab === 'prep') renderPrep(); else renderBookings();
+  }
+  $('tabBook').addEventListener('click', function () { setTab('book'); });
+  $('tabPrep').addEventListener('click', function () { setTab('prep'); });
+
   // App updates: the Android app exposes window.AndroidApp; on the web the button stays hidden.
   var app = window.AndroidApp;
   var updBtn = $('upd'), toast = $('toast'), toastMsg = $('toastMsg'), toastAct = $('toastAct');
@@ -1302,6 +1588,10 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
       .then(function (p) { if (p) window.onPrices(p); }).catch(function () { /* offline */ });
   }
   buildStrip();
+  renderNet();
+  window.addEventListener('online', function () { renderNet(); refreshWeather(); });
+  window.addEventListener('offline', renderNet);
+  refreshWeather();
   $('count').textContent = countText();
   renderBookCount();
   var todayIdx = tripDay();

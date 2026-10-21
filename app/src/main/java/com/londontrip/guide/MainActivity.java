@@ -119,6 +119,12 @@ public class MainActivity extends Activity {
         public void refreshPrices() {
             io.execute(MainActivity.this::refreshPricesNow);
         }
+
+        /** Downloads a weather or Tube status URL and passes the text (or null) to window.onNet(id, text). */
+        @JavascriptInterface
+        public void getText(String url, String id) {
+            io.execute(() -> getTextNow(url, id));
+        }
     }
 
     private void refreshPricesNow() {
@@ -129,6 +135,33 @@ public class MainActivity extends Activity {
         // The price is on screen now, so the background check needn't notify about it.
         PriceCheck.markSeen(this, json);
         String js = "window.onPrices && window.onPrices(" + JSONObject.quote(json) + ")";
+        runOnUiThread(() -> web.evaluateJavascript(js, null));
+    }
+
+    /** Hosts the page may read through getText. */
+    private static final String[] NET_HOSTS = {"api.open-meteo.com", "api.tfl.gov.uk"};
+
+    private void getTextNow(String url, String id) {
+        String text = null;
+        try {
+            String host = Uri.parse(url).getHost();
+            boolean allowed = url.startsWith("https://");
+            boolean known = false;
+            for (String h : NET_HOSTS) {
+                known |= h.equals(host);
+            }
+            if (allowed && known) {
+                HttpURLConnection conn = open(url);
+                conn.setUseCaches(false);
+                if (conn.getResponseCode() == 200) {
+                    text = readAll(conn.getInputStream());
+                }
+            }
+        } catch (Exception e) {
+            text = null;
+        }
+        String js = "window.onNet && window.onNet(" + JSONObject.quote(id) + ","
+                + (text == null ? "null" : JSONObject.quote(text)) + ")";
         runOnUiThread(() -> web.evaluateJavascript(js, null));
     }
 
