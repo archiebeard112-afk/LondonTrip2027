@@ -1,12 +1,10 @@
 package com.londontrip.guide;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.job.JobInfo;
-import android.app.job.JobScheduler;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -22,18 +20,24 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.Locale;
 
 /**
  * Daily flight prices. A scheduled Claude task writes the cheapest DEN-LHR fare to prices.json on the
- * repo's "prices" branch once a day. This class downloads that file, keeps a copy for the page, and
- * posts a notification when a new day's price appears.
+ * repo's "prices" branch at 4:30 AM. This class checks that file a few times between 4:30 and 5:30 AM,
+ * keeps a copy for the page, and posts a notification when the new price differs from the last one.
  */
 final class PriceCheck {
     static final String PRICES_URL =
             "https://raw.githubusercontent.com/archiebeard112-afk/LondonTrip2027/prices/prices.json";
 
-    private static final int JOB_ID = 2027;
+    /** Check times after the 4:30 AM task, phone local time. Later ones are retries if the price isn't in yet. */
+    private static final LocalTime[] SLOTS = {
+            LocalTime.of(4, 40), LocalTime.of(4, 55), LocalTime.of(5, 10), LocalTime.of(5, 25)
+    };
     private static final String CHANNEL_ID = "flight_prices";
     private static final int NOTIFICATION_ID = 1;
     private static final String PREFS = "prices";
@@ -43,18 +47,51 @@ final class PriceCheck {
     private PriceCheck() {
     }
 
-    /** Schedules the background check every few hours. Only a new day's price triggers a notification. */
+    /** Sets the next morning check. Safe to call often: it replaces any check already set. */
     static void schedule(Context context) {
-        JobScheduler js = context.getSystemService(JobScheduler.class);
-        if (js == null || js.getPendingJob(JOB_ID) != null) {
+        JSONObject latest = latest(cached(context));
+        scheduleNext(context, latest != null && today().equals(latest.optString("date")));
+    }
+
+    /** One check in the morning window: fetch, notify if today's price changed, then set the next check. */
+    static void runMorningCheck(Context context) {
+        String json = fetch(context);
+        JSONObject latest = latest(json);
+        boolean gotToday = latest != null && today().equals(latest.optString("date"));
+        if (gotToday) {
+            notifyIfChanged(context, json);
+        }
+        scheduleNext(context, gotToday);
+    }
+
+    private static void scheduleNext(Context context, boolean doneToday) {
+        AlarmManager am = context.getSystemService(AlarmManager.class);
+        if (am == null) {
             return;
         }
-        JobInfo job = new JobInfo.Builder(JOB_ID, new ComponentName(context, PriceJobService.class))
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                .setPeriodic(6 * 60 * 60 * 1000L)
-                .setPersisted(true)
-                .build();
-        js.schedule(job);
+        ZonedDateTime now = ZonedDateTime.now();
+        ZonedDateTime next = null;
+        if (!doneToday) {
+            for (LocalTime slot : SLOTS) {
+                ZonedDateTime t = now.with(slot);
+                if (t.isAfter(now.plusSeconds(30))) {
+                    next = t;
+                    break;
+                }
+            }
+        }
+        if (next == null) {
+            next = now.plusDays(1).with(SLOTS[0]);
+        }
+        Intent check = new Intent(context, PriceAlarmReceiver.class).setAction(PriceAlarmReceiver.ACTION_CHECK);
+        PendingIntent pi = PendingIntent.getBroadcast(context, 0, check,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        // Inexact so no special permission is needed; Android may run it a few minutes late while the phone sleeps.
+        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next.toInstant().toEpochMilli(), pi);
+    }
+
+    private static String today() {
+        return LocalDate.now().toString();
     }
 
     /** The last prices.json the app downloaded, or null. */
@@ -66,8 +103,8 @@ final class PriceCheck {
     static String fetch(Context context) {
         try {
             HttpURLConnection conn = (HttpURLConnection) new URL(PRICES_URL).openConnection();
-            conn.setConnectTimeout(15000);
-            conn.setReadTimeout(30000);
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(15000);
             conn.setUseCaches(false);
             conn.setRequestProperty("User-Agent", "LondonTrip-Android");
             if (conn.getResponseCode() != 200) {
@@ -90,10 +127,11 @@ final class PriceCheck {
         }
     }
 
-    /** Posts a notification if the downloaded file has a price for a day we haven't told the user about. */
-    static void notifyIfNew(Context context, String json) {
+    /** Posts a notification if the newest price differs from the one before it and hasn't been shown yet. */
+    static void notifyIfChanged(Context context, String json) {
         JSONObject latest = latest(json);
-        if (latest == null) {
+        JSONObject prev = previous(json);
+        if (latest == null || prev == null || latest.optInt("price") == prev.optInt("price")) {
             return;
         }
         String date = latest.optString("date");
@@ -119,7 +157,7 @@ final class PriceCheck {
         Notification n = new Notification.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_plane)
                 .setContentTitle("Flights to London: " + money(latest.optInt("price")) + " for 2")
-                .setContentText(detail(json, latest))
+                .setContentText(detail(latest, prev))
                 .setContentIntent(tap)
                 .setAutoCancel(true)
                 .build();
@@ -127,21 +165,10 @@ final class PriceCheck {
         p.edit().putString(KEY_NOTIFIED, date).apply();
     }
 
-    private static String detail(String json, JSONObject latest) {
+    private static String detail(JSONObject latest, JSONObject prev) {
         StringBuilder s = new StringBuilder();
-        JSONObject prev = previous(json);
-        if (prev != null) {
-            int diff = latest.optInt("price") - prev.optInt("price");
-            if (diff < 0) {
-                s.append("Down ").append(money(-diff)).append(" since last check");
-            } else if (diff > 0) {
-                s.append("Up ").append(money(diff)).append(" since last check");
-            } else {
-                s.append("Same as last check");
-            }
-        } else {
-            s.append("DEN to LHR round trip, Feb 19 to 28");
-        }
+        int diff = latest.optInt("price") - prev.optInt("price");
+        s.append(diff < 0 ? "Down " : "Up ").append(money(Math.abs(diff))).append(" since last check");
         String airline = latest.optString("airline");
         if (!airline.isEmpty()) {
             s.append(" · ").append(airline);
