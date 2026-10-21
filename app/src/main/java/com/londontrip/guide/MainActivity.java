@@ -1,11 +1,13 @@
 package com.londontrip.guide;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -81,6 +83,12 @@ public class MainActivity extends Activity {
         } else {
             web.restoreState(savedInstanceState);
         }
+
+        PriceCheck.schedule(this);
+        if (Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[] {Manifest.permission.POST_NOTIFICATIONS}, 1);
+        }
     }
 
     /** Methods the page can call through window.AndroidApp. */
@@ -99,6 +107,29 @@ public class MainActivity extends Activity {
         public void installUpdate() {
             io.execute(MainActivity.this::installUpdateNow);
         }
+
+        /** The last flight prices the app downloaded, as prices.json text, or null. */
+        @JavascriptInterface
+        public String getPrices() {
+            return PriceCheck.cached(MainActivity.this);
+        }
+
+        /** Downloads the latest prices and passes them to window.onPrices. */
+        @JavascriptInterface
+        public void refreshPrices() {
+            io.execute(MainActivity.this::refreshPricesNow);
+        }
+    }
+
+    private void refreshPricesNow() {
+        String json = PriceCheck.fetch(this);
+        if (json == null) {
+            return;
+        }
+        // The price is on screen now, so the background check needn't notify about it.
+        PriceCheck.markSeen(this, json);
+        String js = "window.onPrices && window.onPrices(" + JSONObject.quote(json) + ")";
+        runOnUiThread(() -> web.evaluateJavascript(js, null));
     }
 
     private int currentVersion() {

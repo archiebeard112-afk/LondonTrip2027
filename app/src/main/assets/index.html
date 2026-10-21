@@ -199,13 +199,28 @@ main { padding-block: 18px 110px; }
 
 .chiprow { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .chiprow .bookchip { margin-bottom: 0; }
-.flchip { border-color: var(--accent); color: var(--accent); }
-.flchip b { color: var(--ink); }
 
-/* Flights sheet */
-.flbtns { display: flex; flex-wrap: wrap; gap: 8px; }
-.flbtns .bigbtn { flex: 1 1 10em; min-height: 50px; font-size: 15px; }
-.fltip { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
+/* Flight price: plane + today's cheapest fare, tap to open it */
+.pricechip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 4px 14px 4px 4px;
+  border: 1.5px solid var(--accent);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+.pricechip .plane { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: var(--accent-ink); }
+.pricechip .plane svg.i { width: 19px; height: 19px; }
+.pricechip .amt { font-family: var(--f-display); font-weight: 700; font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; }
+.pricechip .for { font-size: 12px; color: var(--muted); }
+.pricechip .chg { font-size: 12.5px; font-weight: 700; }
+.pricechip .chg.down { color: var(--ok); }
+.pricechip .chg.up { color: var(--signal); }
+.pricechip .none { font-size: 14px; font-weight: 700; color: var(--accent); }
 
 /* Day head */
 .kicker { margin: 0; font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.04em; color: var(--muted); }
@@ -541,20 +556,6 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   <ul class="blist" id="bookList"></ul>
 </div>
 
-<div class="scrim" id="flScrim" hidden></div>
-<div class="sheet wrap" id="flSheet" role="dialog" aria-modal="true" aria-labelledby="flTitle" hidden>
-  <div class="sheethead">
-    <h2 id="flTitle">Flights</h2>
-    <button class="xbtn" id="flClose" type="button" aria-label="Close flights">&times;</button>
-  </div>
-  <p class="sub">Denver (DEN) &#8644; London Heathrow (LHR) &middot; out Fri Feb 19, back Sun Feb 28, 2027 &middot; 2 adults, round trip</p>
-  <div class="flbtns">
-    <a class="bigbtn" id="flGoogle" target="_blank" rel="noopener" href="#">Google Flights</a>
-    <a class="bigbtn" id="flSky" target="_blank" rel="noopener" href="#">Skyscanner</a>
-  </div>
-  <p class="fltip">Both open right here in the app with your route, dates and 2 passengers filled in. Tap <b>&lsaquo; Trip</b> to come back. For price-drop emails from Google, tap <b>Chrome</b> in the top bar, sign in and turn on <b>Track prices</b>.</p>
-</div>
-
 <script>
 (function () {
   'use strict';
@@ -814,7 +815,8 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
 
   var FLIGHTS = {
     google: 'https://www.google.com/travel/flights/search?tfs=CBwQAhoeEgoyMDI3LTAyLTE5agcIARIDREVOcgcIARIDTEhSGh4SCjIwMjctMDItMjhqBwgBEgNMSFJyBwgBEgNERU5AAUABSAFwAYIBCwj___________8BmAEB&curr=USD&hl=en',
-    sky: 'https://www.skyscanner.com/transport/flights/den/lhr/270219/270228/?adultsv2=2&cabinclass=economy&rtn=1&currency=USD'
+    // Written once a day by a scheduled Claude task: { history: [{ date, price, airline, stops, url }] }, price in USD for both adults.
+    prices: 'https://raw.githubusercontent.com/archiebeard112-afk/LondonTrip2027/prices/prices.json'
   };
   var BOOKINGS = [
     { id: 'flights', t: 'Round-trip flights', d: 'DEN \u21C4 LHR \u00B7 Feb 19\u201328 \u00B7 2 adults', u: FLIGHTS.google },
@@ -967,10 +969,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
         row.appendChild(el('button', { type: 'button', class: 'bookchip', onclick: openBookings }, icon(ICON.list),
           el('span', { text: left + (left === 1 ? ' booking' : ' bookings') + ' to make' }), el('b', { text: 'Open' })));
       }
-      if (!booked.flights) {
-        row.appendChild(el('button', { type: 'button', class: 'bookchip flchip', onclick: openFlights }, icon(ICON.plane),
-          el('span', { text: 'Flight prices' }), el('b', { text: 'Check' })));
-      }
+      if (!booked.flights) row.appendChild(priceChip());
       return row.children.length ? row : null;
     }
     if (n !== i || n >= DAYS.length) return null;
@@ -1137,16 +1136,32 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   $('bookClose').addEventListener('click', closeBookings);
   $('bookScrim').addEventListener('click', closeBookings);
 
-  // Flights: Google Flights and Skyscanner searches (both open inside the app)
-  function openFlights() {
-    closeBookings();
-    $('flGoogle').href = FLIGHTS.google;
-    $('flSky').href = FLIGHTS.sky;
-    $('flSheet').hidden = false; $('flScrim').hidden = false;
+  // Flight price: a plane with today's cheapest fare. Tapping it opens that fare (Google Flights opens inside the app).
+  var prices = null;
+  function setPrices(json) {
+    try { var p = typeof json === 'string' ? JSON.parse(json) : json; if (p && p.history && p.history.length) prices = p; } catch (e) { /* keep the last good copy */ }
   }
-  function closeFlights() { $('flSheet').hidden = true; $('flScrim').hidden = true; }
-  $('flClose').addEventListener('click', closeFlights);
-  $('flScrim').addEventListener('click', closeFlights);
+  function dollars(n) {
+    try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n); }
+    catch (e) { return '$' + Math.round(n); }
+  }
+  function priceChip() {
+    var h = prices ? prices.history.filter(function (e) { return e && e.price > 0; }) : [];
+    var last = h[h.length - 1], prev = h[h.length - 2];
+    var href = last && /^https:\/\//.test(last.url || '') ? last.url : FLIGHTS.google;
+    var plane = el('span', { class: 'plane' }, icon(ICON.plane));
+    if (!last) {
+      return el('a', { class: 'pricechip', href: href, target: '_blank', rel: 'noopener' }, plane, el('span', { class: 'none', text: 'Flight prices' }));
+    }
+    var diff = prev ? last.price - prev.price : 0;
+    var chg = !prev ? null : diff < 0 ? el('span', { class: 'chg down', text: '\u25BC ' + dollars(-diff) })
+      : diff > 0 ? el('span', { class: 'chg up', text: '\u25B2 ' + dollars(diff) }) : el('span', { class: 'chg', text: 'same' });
+    var label = 'Flights ' + dollars(last.price) + ' for 2' + (last.airline ? ', ' + last.airline : '')
+      + (prev ? (diff < 0 ? ', down ' + dollars(-diff) : diff > 0 ? ', up ' + dollars(diff) : ', no change') : '') + '. Open this fare.';
+    return el('a', { class: 'pricechip', href: href, target: '_blank', rel: 'noopener', 'aria-label': label, title: last.date ? 'Checked ' + last.date : null },
+      plane, el('span', { class: 'amt', text: dollars(last.price) }), el('span', { class: 'for', text: 'for 2' }), chg);
+  }
+  window.onPrices = function (json) { setPrices(json); show(current, false); };
 
   // 6. Currency converter: small popup with a number pad
   var savedRates = load('ldn.rates', { GBP: 1.30 });
@@ -1204,7 +1219,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     if (b) press(b.getAttribute('data-k'));
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeCv(); closeBookings(); closeFlights(); return; }
+    if (e.key === 'Escape') { closeCv(); closeBookings(); return; }
     if (pop.hidden || e.target === rateEl) return;
     if (/^[0-9]$/.test(e.key) || e.key === '.') press(e.key);
     else if (e.key === 'Backspace') press('back');
@@ -1256,10 +1271,10 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   // Swipe left for the next day, right for the previous day.
   var swipeX = null, swipeY = 0;
   function swipeIgnored(t) {
-    return !t || !t.closest || !!t.closest('.strip, #cvpop, #toast, #bookSheet, #flSheet, input');
+    return !t || !t.closest || !!t.closest('.strip, #cvpop, #toast, #bookSheet, input');
   }
   document.addEventListener('touchstart', function (e) {
-    if (e.touches.length !== 1 || !pop.hidden || !$('bookSheet').hidden || !$('flSheet').hidden || swipeIgnored(e.target)) { swipeX = null; return; }
+    if (e.touches.length !== 1 || !pop.hidden || !$('bookSheet').hidden || swipeIgnored(e.target)) { swipeX = null; return; }
     swipeX = e.touches[0].clientX;
     swipeY = e.touches[0].clientY;
   }, { passive: true });
@@ -1279,6 +1294,13 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   document.addEventListener('touchcancel', function () { swipeX = null; }, { passive: true });
 
   // Start
+  if (app && typeof app.getPrices === 'function') {
+    setPrices(app.getPrices());
+    app.refreshPrices();
+  } else if (window.fetch) {
+    fetch(FLIGHTS.prices, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (p) { if (p) window.onPrices(p); }).catch(function () { /* offline */ });
+  }
   buildStrip();
   $('count').textContent = countText();
   renderBookCount();
