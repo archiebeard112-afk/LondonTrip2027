@@ -1090,6 +1090,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
       t.addEventListener('click', function () {
         if (booked[b.id]) delete booked[b.id]; else booked[b.id] = true;
         save('ldn.book', booked);
+        if (b.id === 'flights') syncFlightsBooked();
         renderBookings();
         renderBookCount();
         show(current, false);
@@ -1150,6 +1151,11 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
       when ? el('span', { class: 'when', text: when }) : null);
   }
   window.onPrices = function (json) { setPrices(json); show(current, false); };
+  // Once the flights are booked the price chip hides (see nextCard) and the app stops price checks and notifications.
+  function syncFlightsBooked() {
+    var a = window.AndroidApp;
+    if (a && typeof a.setFlightsBooked === 'function') a.setFlightsBooked(!!booked.flights);
+  }
 
   // 6. Currency converter: small popup with a number pad
   var savedRates = load('ldn.rates', { GBP: 1.30 });
@@ -1282,6 +1288,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   document.addEventListener('touchcancel', function () { swipeX = null; }, { passive: true });
 
   // Start
+  syncFlightsBooked();
   if (app && typeof app.getPrices === 'function') {
     setPrices(app.getPrices());
     app.refreshPrices();

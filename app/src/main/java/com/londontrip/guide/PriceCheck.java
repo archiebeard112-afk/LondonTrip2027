@@ -43,18 +43,42 @@ final class PriceCheck {
     private static final String PREFS = "prices";
     private static final String KEY_JSON = "json";
     private static final String KEY_NOTIFIED = "notifiedDate";
+    private static final String KEY_BOOKED = "flightsBooked";
 
     private PriceCheck() {
     }
 
+    /** Flights ticked off as booked in the app: price checks and notifications stop. Unticking starts them again. */
+    static void setBooked(Context context, boolean booked) {
+        prefs(context).edit().putBoolean(KEY_BOOKED, booked).apply();
+        if (booked) {
+            AlarmManager am = context.getSystemService(AlarmManager.class);
+            if (am != null) {
+                am.cancel(checkIntent(context));
+            }
+        } else {
+            schedule(context);
+        }
+    }
+
+    private static boolean booked(Context context) {
+        return prefs(context).getBoolean(KEY_BOOKED, false);
+    }
+
     /** Sets the next morning check. Safe to call often: it replaces any check already set. */
     static void schedule(Context context) {
+        if (booked(context)) {
+            return;
+        }
         JSONObject latest = latest(cached(context));
         scheduleNext(context, latest != null && today().equals(latest.optString("date")));
     }
 
     /** One check in the morning window: fetch, notify if today's price changed, then set the next check. */
     static void runMorningCheck(Context context) {
+        if (booked(context)) {
+            return;
+        }
         String json = fetch(context);
         JSONObject latest = latest(json);
         boolean gotToday = latest != null && today().equals(latest.optString("date"));
@@ -83,11 +107,14 @@ final class PriceCheck {
         if (next == null) {
             next = now.plusDays(1).with(SLOTS[0]);
         }
-        Intent check = new Intent(context, PriceAlarmReceiver.class).setAction(PriceAlarmReceiver.ACTION_CHECK);
-        PendingIntent pi = PendingIntent.getBroadcast(context, 0, check,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         // Inexact so no special permission is needed; Android may run it a few minutes late while the phone sleeps.
-        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next.toInstant().toEpochMilli(), pi);
+        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next.toInstant().toEpochMilli(), checkIntent(context));
+    }
+
+    private static PendingIntent checkIntent(Context context) {
+        Intent check = new Intent(context, PriceAlarmReceiver.class).setAction(PriceAlarmReceiver.ACTION_CHECK);
+        return PendingIntent.getBroadcast(context, 0, check,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
     private static String today() {
@@ -131,7 +158,7 @@ final class PriceCheck {
     static void notifyIfChanged(Context context, String json) {
         JSONObject latest = latest(json);
         JSONObject prev = previous(json);
-        if (latest == null || prev == null || latest.optInt("price") == prev.optInt("price")) {
+        if (booked(context) || latest == null || prev == null || latest.optInt("price") == prev.optInt("price")) {
             return;
         }
         String date = latest.optString("date");
