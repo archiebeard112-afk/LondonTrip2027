@@ -161,24 +161,7 @@ main { padding-block: 18px 110px; }
 }
 .bigbtn.ghost { background: var(--soft); color: var(--accent); flex: 0 0 auto; }
 
-/* Bookings chip */
-.bookchip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  margin-bottom: 14px;
-  padding: 0 14px 0 11px;
-  border: 1.5px solid var(--signal);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--signal);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.bookchip svg.i { width: 16px; height: 16px; }
-.bookchip b { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+/* Bookings */
 .pin.book { background: var(--soft); color: var(--accent); }
 .blink {
   flex: 0 0 auto;
@@ -198,7 +181,6 @@ main { padding-block: 18px 110px; }
 .blink svg.i { width: 14px; height: 14px; }
 
 .chiprow { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-.chiprow .bookchip { margin-bottom: 0; }
 
 /* Flight price: plane + today's cheapest fare, tap to open it */
 .pricechip {
@@ -963,14 +945,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     var n = tripDay();
     var d = DAYS[i];
     if (n < 0) {
-      var left = BOOKINGS.length - bookedCount();
-      var row = el('div', { class: 'chiprow' });
-      if (left > 0) {
-        row.appendChild(el('button', { type: 'button', class: 'bookchip', onclick: openBookings }, icon(ICON.list),
-          el('span', { text: left + (left === 1 ? ' booking' : ' bookings') + ' to make' }), el('b', { text: 'Open' })));
-      }
-      if (!booked.flights) row.appendChild(priceChip());
-      return row.children.length ? row : null;
+      return booked.flights ? null : el('div', { class: 'chiprow' }, priceChip());
     }
     if (n !== i || n >= DAYS.length) return null;
     var idx = -1;
