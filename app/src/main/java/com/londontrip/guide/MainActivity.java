@@ -114,6 +114,12 @@ public class MainActivity extends Activity {
             return PriceCheck.cached(MainActivity.this);
         }
 
+        /** Called when the flights are ticked or unticked in the bookings list. */
+        @JavascriptInterface
+        public void setFlightsBooked(boolean booked) {
+            PriceCheck.setBooked(MainActivity.this, booked);
+        }
+
         /** Downloads the latest prices and passes them to window.onPrices. */
         @JavascriptInterface
         public void refreshPrices() {
