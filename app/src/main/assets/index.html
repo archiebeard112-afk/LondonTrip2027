@@ -184,48 +184,28 @@ main { padding-block: 18px 110px; }
 .blink svg.i { width: 14px; height: 14px; }
 
 .chiprow { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-
-/* Flight price: plane + today's cheapest fare, tap to open it */
-.pricechip {
+.flchip {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 4px 14px 4px 4px;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px 0 11px;
   border: 1.5px solid var(--accent);
   border-radius: 999px;
-  background: var(--surface);
-  color: var(--ink);
-  text-decoration: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
 }
-.pricechip .plane { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: var(--accent-ink); }
-.pricechip .plane svg.i { width: 19px; height: 19px; }
-.pricechip .amt { font-family: var(--f-display); font-weight: 700; font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; }
-.pricechip .for { font-size: 12px; color: var(--muted); }
-.pricechip .chg { font-size: 12.5px; font-weight: 700; }
-.pricechip .chg.down { color: var(--ok); }
-.pricechip .chg.up { color: var(--signal); }
-.pricechip .when { font-size: 12px; color: var(--muted); padding-left: 10px; border-left: 1px solid var(--line); }
-.pricechip .for, .pricechip .chg, .pricechip .when { white-space: nowrap; }
-.stalewarn { flex: 1 1 100%; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--signal); }
-.stalewarn svg.i { width: 16px; height: 16px; }
-.pricehist {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px 0 11px;
-  border: 1.5px solid var(--line); border-radius: 999px; background: transparent; color: var(--ink);
-  font-size: 13.5px; font-weight: 700; cursor: pointer;
-}
-.pricehist svg.i { width: 16px; height: 16px; color: var(--accent); }
-.pricehist[aria-expanded="true"] { background: var(--soft); border-color: var(--soft); }
-.histpanel { flex: 1 1 100%; padding: 12px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
-.histpanel .lbl { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
-.histchart { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 8px; align-items: stretch; }
-.histchart .ax { display: flex; flex-direction: column; justify-content: space-between; font-family: var(--f-mono); font-size: 11px; color: var(--muted); text-align: right; }
-.histchart svg { width: 100%; height: 90px; display: block; overflow: visible; }
-.histchart .xs { grid-column: 2; display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
-.histlist { list-style: none; margin: 10px 0 0; padding: 0; font-size: 13.5px; }
-.histlist li { display: flex; justify-content: space-between; padding: 5px 0; border-top: 1px solid var(--line); }
-.histlist b { font-family: var(--f-mono); font-weight: 500; font-variant-numeric: tabular-nums; }
-.pricechip .none { font-size: 14px; font-weight: 700; color: var(--accent); }
+.flchip svg.i { width: 16px; height: 16px; }
+
+.flchip { border-color: var(--accent); color: var(--accent); }
+.flchip b { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+
+/* Flights sheet */
+.flbtns { display: flex; flex-wrap: wrap; gap: 8px; }
+.flbtns .bigbtn { flex: 1 1 10em; min-height: 50px; font-size: 15px; }
+.fltip { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
 
 /* Your flights form */
 .flform { display: grid; gap: 14px; }
@@ -613,6 +593,20 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   </div>
 </div>
 
+<div class="scrim" id="searchScrim" hidden></div>
+<div class="sheet wrap" id="searchSheet" role="dialog" aria-modal="true" aria-labelledby="searchTitle" hidden>
+  <div class="sheethead">
+    <h2 id="searchTitle">Flights</h2>
+    <button class="xbtn" id="searchClose" type="button" aria-label="Close flights">&times;</button>
+  </div>
+  <p class="sub">Denver (DEN) &#8644; London Heathrow (LHR) &middot; out Fri Feb 19, back Sun Feb 28, 2027 &middot; 2 adults, round trip</p>
+  <div class="flbtns">
+    <a class="bigbtn" id="flGoogle" target="_blank" rel="noopener" href="#">Google Flights</a>
+    <a class="bigbtn" id="flSky" target="_blank" rel="noopener" href="#">Skyscanner</a>
+  </div>
+  <p class="fltip">Both open right here in the app with your route, dates and 2 passengers filled in. Tap <b>&lsaquo; Trip</b> to come back. For price-drop emails from Google, tap <b>Chrome</b> in the top bar, sign in and turn on <b>Track prices</b>.</p>
+</div>
+
 <div class="scrim" id="flScrim" hidden></div>
 <div class="sheet wrap" id="flSheet" role="dialog" aria-modal="true" aria-labelledby="flTitle" hidden>
   <div class="sheethead">
@@ -899,8 +893,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
 
   var FLIGHTS = {
     google: 'https://www.google.com/travel/flights/search?tfs=CBwQAhoeEgoyMDI3LTAyLTE5agcIARIDREVOcgcIARIDTEhSGh4SCjIwMjctMDItMjhqBwgBEgNMSFJyBwgBEgNERU5AAUABSAFwAYIBCwj___________8BmAEB&curr=USD&hl=en',
-    // Written once a day by a scheduled Claude task: { history: [{ date, price, airline, stops, url }] }, price in USD for both adults.
-    prices: 'https://raw.githubusercontent.com/archiebeard112-afk/LondonTrip2027/prices/prices.json'
+    sky: 'https://www.skyscanner.com/transport/flights/den/lhr/270219/270228/?adultsv2=2&cabinclass=economy&rtn=1&currency=USD'
   };
   var BOOKINGS = [
     { id: 'flights', t: 'Round-trip flights', d: 'DEN \u21C4 LHR \u00B7 Feb 19\u201328 \u00B7 2 adults', u: FLIGHTS.google },
@@ -944,9 +937,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     plane: 'M10.5 13.5 3 11l1.5-1.5 8 1 4-4.5a2 2 0 0 1 3 3L15 13l1 8-1.5 1.5L12 15l-3 3v2.5L7.5 22l-1-3.5L3 17.5 4.5 16H7l3.5-2.5z',
     ticket: 'M3 8h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4zM14 8v10',
     out: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
-    list: 'M9 6h11M9 12h11M9 18h11M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17',
-    trend: 'M3 17l5.5-5.5 4 4L21 7M15 7h6v6',
-    alert: 'M12 3.5 2.5 20h19zM12 10v4.5M12 17.5h.01'
+    list: 'M9 6h11M9 12h11M9 18h11M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17'
   };
 
   // Storage helpers: the app works without them.
@@ -1054,7 +1045,9 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     var n = tripDay();
     var d = dayView(i);
     if (n < 0) {
-      return booked.flights ? null : priceRow();
+      if (booked.flights) return null;
+      return el('div', { class: 'chiprow' }, el('button', { type: 'button', class: 'flchip', onclick: openFlights }, icon(ICON.plane),
+        el('span', { text: 'Flight prices' }), el('b', { text: 'Check' })));
     }
     if (n !== i || n >= DAYS.length) return null;
     var idx = -1;
@@ -1202,7 +1195,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
       el('a', { class: 'pin', href: dirUrl(HOTEL, 'transit'), target: '_blank', rel: 'noopener' }, icon(ICON.pin), 'Back to the hotel')));
   }
 
-  // Booked flight details: entered when the flights are ticked off, prefilled from the morning price check.
+  // Booked flight details: entered when the flights are ticked off.
   // { out: { flight, departs, arrives }, back: { ... } }, times as 24-hour "HH:MM".
   var myFlights = load('ldn.flights', null);
   function clock(hhmm) {
@@ -1241,21 +1234,13 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   function openFlightForm() {
     closeBookings();
     var f = $('flForm');
-    var src = myFlights, fromCheck = false;
-    if (!src) {
-      var h = priceHistory(), last = h[h.length - 1];
-      if (last && (last.out || last.back)) { src = { out: last.out, back: last.back }; fromCheck = true; }
-    }
-    src = src || {};
+    var src = myFlights || {};
     ['out', 'back'].forEach(function (leg) {
       var v = src[leg] || {};
       f.elements[leg + 'Flight'].value = v.flight || '';
       f.elements[leg + 'Departs'].value = v.departs || '';
       f.elements[leg + 'Arrives'].value = v.arrives || '';
     });
-    $('flHint').textContent = fromCheck
-      ? 'Filled in from the last flight the price check found. Change anything that differs from what you booked.'
-      : 'Add your flight numbers and times so they show in the trip.';
     $('flSheet').hidden = false; $('flScrim').hidden = false;
   }
   function closeFlightForm() { $('flSheet').hidden = true; $('flScrim').hidden = true; }
@@ -1287,10 +1272,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
       t.addEventListener('click', function () {
         if (booked[b.id]) delete booked[b.id]; else booked[b.id] = true;
         save('ldn.book', booked);
-        if (b.id === 'flights') {
-          syncFlightsBooked();
-          if (booked.flights) { renderBookCount(); show(current, false); openFlightForm(); return; }
-        }
+        if (b.id === 'flights' && booked.flights) { renderBookCount(); show(current, false); openFlightForm(); return; }
         renderBookings();
         renderBookCount();
         show(current, false);
@@ -1314,121 +1296,16 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   $('bookClose').addEventListener('click', closeBookings);
   $('bookScrim').addEventListener('click', closeBookings);
 
-  // Flight price: a plane with today's cheapest fare. Tapping it opens that fare (Google Flights opens inside the app).
-  var prices = null;
-  function setPrices(json) {
-    try { var p = typeof json === 'string' ? JSON.parse(json) : json; if (p && p.history && p.history.length) prices = p; } catch (e) { /* keep the last good copy */ }
+  // Flights: Google Flights and Skyscanner searches (both open inside the app)
+  function openFlights() {
+    closeBookings();
+    $('flGoogle').href = FLIGHTS.google;
+    $('flSky').href = FLIGHTS.sky;
+    $('searchSheet').hidden = false; $('searchScrim').hidden = false;
   }
-  function dollars(n) {
-    try { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n); }
-    catch (e) { return '$' + Math.round(n); }
-  }
-  function isoDate(iso) {
-    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
-    return m ? new Date(+m[1], m[2] - 1, +m[3]) : null;
-  }
-  function shortDate(d) { return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
-  // When the price was last checked. Two days or more without an update means the morning task has stopped.
-  function checkedText(iso) {
-    var d = isoDate(iso);
-    if (!d) return null;
-    var ago = Math.round((dayMs(new Date()) - dayMs(d)) / 86400000);
-    if (ago >= 2) return { text: 'Not updated since ' + shortDate(d), stale: true };
-    return { text: ago === 1 ? 'Checked yesterday' : 'Checked today', stale: false };
-  }
-  // Nonstop fares only: any saved price with a stop is ignored.
-  function priceHistory() { return prices ? prices.history.filter(function (e) { return e && e.price > 0 && !(e.stops > 0); }) : []; }
-
-  var priceHistOpen = false;
-  function priceRow() {
-    var h = priceHistory();
-    var row = el('div', { class: 'chiprow' }, priceChip());
-    var when = h.length ? checkedText(h[h.length - 1].date) : null;
-    if (when && when.stale) {
-      row.appendChild(el('p', { class: 'stalewarn', style: 'margin:0' }, icon(ICON.alert), 'Price n' + when.text.slice(1) + '. Check the morning task in Claude.'));
-    }
-    if (h.length < 2) return row;
-    var btn = el('button', { type: 'button', class: 'pricehist', 'aria-expanded': priceHistOpen ? 'true' : 'false' }, icon(ICON.trend), 'History');
-    var panel = histPanel(h);
-    panel.hidden = !priceHistOpen;
-    btn.addEventListener('click', function () {
-      priceHistOpen = !priceHistOpen;
-      panel.hidden = !priceHistOpen;
-      btn.setAttribute('aria-expanded', priceHistOpen ? 'true' : 'false');
-    });
-    row.appendChild(btn);
-    row.appendChild(panel);
-    return row;
-  }
-  // Line chart of the last 30 checks, then the last 7 as a list (newest first).
-  function histPanel(h) {
-    var pts = h.slice(-30);
-    var lo = Math.min.apply(null, pts.map(function (e) { return e.price; }));
-    var hi = Math.max.apply(null, pts.map(function (e) { return e.price; }));
-    var span = hi - lo || 1;
-    var W = 300, H = 90, pad = 6;
-    var xy = pts.map(function (e, i) {
-      var x = pts.length === 1 ? W / 2 : (i / (pts.length - 1)) * W;
-      var y = pad + (1 - (e.price - lo) / span) * (H - 2 * pad);
-      return [x, y];
-    });
-    var svg = document.createElementNS(SVGNS, 'svg');
-    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-    svg.setAttribute('preserveAspectRatio', 'none');
-    svg.setAttribute('role', 'img');
-    svg.setAttribute('aria-label', 'Price over the last ' + pts.length + ' checks, from ' + dollars(lo) + ' to ' + dollars(hi));
-    var line = document.createElementNS(SVGNS, 'polyline');
-    line.setAttribute('points', xy.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' '));
-    line.setAttribute('fill', 'none');
-    line.setAttribute('stroke', 'var(--accent)');
-    line.setAttribute('stroke-width', '2.5');
-    line.setAttribute('stroke-linejoin', 'round');
-    line.setAttribute('vector-effect', 'non-scaling-stroke');
-    svg.appendChild(line);
-    var end = xy[xy.length - 1];
-    var dot = document.createElementNS(SVGNS, 'circle');
-    dot.setAttribute('cx', end[0]); dot.setAttribute('cy', end[1]); dot.setAttribute('r', '4');
-    dot.setAttribute('fill', 'var(--accent)');
-    dot.setAttribute('vector-effect', 'non-scaling-stroke');
-    svg.appendChild(dot);
-    var first = isoDate(pts[0].date), lastD = isoDate(pts[pts.length - 1].date);
-    return el('div', { class: 'histpanel' },
-      el('span', { class: 'lbl', text: 'Price history \u00B7 for 2' }),
-      el('div', { class: 'histchart' },
-        el('div', { class: 'ax' }, el('span', { text: dollars(hi) }), el('span', { text: dollars(lo) })),
-        svg,
-        el('div', { class: 'xs' }, el('span', { text: first ? shortDate(first) : '' }), el('span', { text: lastD ? shortDate(lastD) : '' }))),
-      el('ul', { class: 'histlist' }, h.slice(-7).reverse().map(function (e) {
-        var d = isoDate(e.date);
-        return el('li', {}, el('span', { text: d ? d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : e.date }), el('b', { text: dollars(e.price) }));
-      })));
-  }
-
-  function priceChip() {
-    var h = priceHistory();
-    var last = h[h.length - 1], prev = h[h.length - 2];
-    var href = last && /^https:\/\//.test(last.url || '') ? last.url : FLIGHTS.google;
-    var plane = el('span', { class: 'plane' }, icon(ICON.plane));
-    if (!last) {
-      return el('a', { class: 'pricechip', href: href, target: '_blank', rel: 'noopener' }, plane, el('span', { class: 'none', text: 'Flight prices' }));
-    }
-    var diff = prev ? last.price - prev.price : 0;
-    var chg = !prev ? null : diff < 0 ? el('span', { class: 'chg down', text: '\u25BC ' + dollars(-diff) })
-      : diff > 0 ? el('span', { class: 'chg up', text: '\u25B2 ' + dollars(diff) }) : el('span', { class: 'chg', text: 'same' });
-    var when = checkedText(last.date);
-    var label = 'Flights ' + dollars(last.price) + ' for 2' + (last.airline ? ', ' + last.airline : '')
-      + (prev ? (diff < 0 ? ', down ' + dollars(-diff) : diff > 0 ? ', up ' + dollars(diff) : ', no change') : '')
-      + (when ? ', ' + when.text.charAt(0).toLowerCase() + when.text.slice(1) : '') + '. Open this fare.';
-    return el('a', { class: 'pricechip', href: href, target: '_blank', rel: 'noopener', 'aria-label': label },
-      plane, el('span', { class: 'amt', text: dollars(last.price) }), el('span', { class: 'for', text: 'for 2' }), chg,
-      when && !when.stale ? el('span', { class: 'when', text: when.text }) : null);
-  }
-  window.onPrices = function (json) { setPrices(json); show(current, false); };
-  // Once the flights are booked the price chip hides (see nextCard) and the app stops price checks and notifications.
-  function syncFlightsBooked() {
-    var a = window.AndroidApp;
-    if (a && typeof a.setFlightsBooked === 'function') a.setFlightsBooked(!!booked.flights);
-  }
+  function closeFlights() { $('searchSheet').hidden = true; $('searchScrim').hidden = true; }
+  $('searchClose').addEventListener('click', closeFlights);
+  $('searchScrim').addEventListener('click', closeFlights);
 
   // 6. Currency converter: small popup with a number pad
   var savedRates = load('ldn.rates', { GBP: 1.30 });
@@ -1486,7 +1363,7 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     if (b) press(b.getAttribute('data-k'));
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeCv(); closeBookings(); closeFlightForm(); return; }
+    if (e.key === 'Escape') { closeCv(); closeBookings(); closeFlightForm(); closeFlights(); return; }
     if (pop.hidden || e.target === rateEl) return;
     if (/^[0-9]$/.test(e.key) || e.key === '.') press(e.key);
     else if (e.key === 'Backspace') press('back');
@@ -1760,10 +1637,10 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   // Swipe left for the next day, right for the previous day.
   var swipeX = null, swipeY = 0;
   function swipeIgnored(t) {
-    return !t || !t.closest || !!t.closest('.strip, #cvpop, #toast, #bookSheet, #flSheet, input');
+    return !t || !t.closest || !!t.closest('.strip, #cvpop, #toast, #bookSheet, #flSheet, #searchSheet, input');
   }
   document.addEventListener('touchstart', function (e) {
-    if (e.touches.length !== 1 || !pop.hidden || !$('bookSheet').hidden || !$('flSheet').hidden || swipeIgnored(e.target)) { swipeX = null; return; }
+    if (e.touches.length !== 1 || !pop.hidden || !$('bookSheet').hidden || !$('flSheet').hidden || !$('searchSheet').hidden || swipeIgnored(e.target)) { swipeX = null; return; }
     swipeX = e.touches[0].clientX;
     swipeY = e.touches[0].clientY;
   }, { passive: true });
@@ -1783,14 +1660,6 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   document.addEventListener('touchcancel', function () { swipeX = null; }, { passive: true });
 
   // Start
-  syncFlightsBooked();
-  if (app && typeof app.getPrices === 'function') {
-    setPrices(app.getPrices());
-    app.refreshPrices();
-  } else if (window.fetch) {
-    fetch(FLIGHTS.prices, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (p) { if (p) window.onPrices(p); }).catch(function () { /* offline */ });
-  }
   buildStrip();
   renderNet();
   window.addEventListener('online', function () { renderNet(); refreshWeather(); });
