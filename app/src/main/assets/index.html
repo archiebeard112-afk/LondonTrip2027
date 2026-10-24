@@ -599,12 +599,12 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     <h2 id="searchTitle">Flights</h2>
     <button class="xbtn" id="searchClose" type="button" aria-label="Close flights">&times;</button>
   </div>
-  <p class="sub">Denver (DEN) &#8644; London Heathrow (LHR) &middot; out Fri Feb 19, back Sun Feb 28, 2027 &middot; 2 adults, round trip</p>
+  <p class="sub">Denver (DEN) &#8644; London Heathrow (LHR) &middot; out Fri Feb 19, back Sun Feb 28, 2027 &middot; 2 adults, round trip, nonstop only</p>
   <div class="flbtns">
     <a class="bigbtn" id="flGoogle" target="_blank" rel="noopener" href="#">Google Flights</a>
     <a class="bigbtn" id="flSky" target="_blank" rel="noopener" href="#">Skyscanner</a>
   </div>
-  <p class="fltip">Both open right here in the app with your route, dates and 2 passengers filled in. Tap <b>&lsaquo; Trip</b> to come back. For price-drop emails from Google, tap <b>Chrome</b> in the top bar, sign in and turn on <b>Track prices</b>.</p>
+  <p class="fltip">Both open right here in the app with your route, dates and 2 passengers filled in, showing nonstop flights only. Tap <b>&lsaquo; Trip</b> to come back. For price-drop emails from Google, tap <b>Chrome</b> in the top bar, sign in and turn on <b>Track prices</b>.</p>
 </div>
 
 <div class="scrim" id="flScrim" hidden></div>
@@ -892,8 +892,8 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   ];
 
   var FLIGHTS = {
-    google: 'https://www.google.com/travel/flights/search?tfs=CBwQAhoeEgoyMDI3LTAyLTE5agcIARIDREVOcgcIARIDTEhSGh4SCjIwMjctMDItMjhqBwgBEgNMSFJyBwgBEgNERU5AAUABSAFwAYIBCwj___________8BmAEB&curr=USD&hl=en',
-    sky: 'https://www.skyscanner.com/transport/flights/den/lhr/270219/270228/?adultsv2=2&cabinclass=economy&rtn=1&currency=USD'
+    google: 'https://www.google.com/travel/flights/search?tfs=CBwQAhogEgoyMDI3LTAyLTE5agcIARIDREVOcgcIARIDTEhSKAAaIBIKMjAyNy0wMi0yOGoHCAESA0xIUnIHCAESA0RFTigAQAFAAUgBcAGCAQsI____________AZgBAQ&curr=USD&hl=en',
+    sky: 'https://www.skyscanner.com/transport/flights/den/lhr/270219/270228/?adultsv2=2&cabinclass=economy&rtn=1&currency=USD&preferdirects=true&stops=!oneStop,!twoPlusStops'
   };
   var BOOKINGS = [
     { id: 'flights', t: 'Round-trip flights', d: 'DEN \u21C4 LHR \u00B7 Feb 19\u201328 \u00B7 2 adults', u: FLIGHTS.google },
