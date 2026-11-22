@@ -7,9 +7,11 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.provider.Settings;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
@@ -21,18 +23,23 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
     private static final String REPO = "archiebeard112-afk/LondonTrip2027";
     private static final String ACTION_INSTALL_STATUS = "com.londontrip.guide.INSTALL_STATUS";
+    private static final int PICK_DOCS = 41;
+    private static final long MAX_DOC_BYTES = 30L * 1024 * 1024;
 
     private WebView web;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
@@ -112,6 +119,150 @@ public class MainActivity extends Activity {
         public void getText(String url, String id) {
             io.execute(() -> getTextNow(url, id));
         }
+
+        /** Opens the system picker for screenshots and PDFs; results arrive in window.onDocs(list). */
+        @JavascriptInterface
+        public void pickDocs() {
+            runOnUiThread(() -> {
+                Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                pick.addCategory(Intent.CATEGORY_OPENABLE);
+                pick.setType("*/*");
+                pick.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "application/pdf"});
+                pick.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                try {
+                    startActivityForResult(pick, PICK_DOCS);
+                } catch (ActivityNotFoundException e) {
+                    docsMessage("This phone has no file picker.");
+                }
+            });
+        }
+
+        /** Saved confirmations as JSON: [{id, name, type, size, time}], newest first. */
+        @JavascriptInterface
+        public String listDocs() {
+            return docsJson();
+        }
+
+        @JavascriptInterface
+        public void openDoc(String id) {
+            File f = DocsProvider.fileFor(DocsProvider.docsDir(MainActivity.this), id);
+            if (f == null) {
+                docsMessage("That file is no longer saved.");
+                return;
+            }
+            Intent view = new Intent(Intent.ACTION_VIEW);
+            view.setDataAndType(DocsProvider.uriFor(id), DocsProvider.typeOf(f.getName()));
+            view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            runOnUiThread(() -> {
+                try {
+                    startActivity(view);
+                } catch (ActivityNotFoundException e) {
+                    docsMessage("No app on this phone can open this file.");
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public boolean deleteDoc(String id) {
+            File f = DocsProvider.fileFor(DocsProvider.docsDir(MainActivity.this), id);
+            return f != null && f.delete();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != PICK_DOCS || resultCode != RESULT_OK || data == null) {
+            return;
+        }
+        java.util.List<Uri> uris = new java.util.ArrayList<>();
+        if (data.getClipData() != null) {
+            for (int i = 0; i < data.getClipData().getItemCount(); i++) {
+                uris.add(data.getClipData().getItemAt(i).getUri());
+            }
+        } else if (data.getData() != null) {
+            uris.add(data.getData());
+        }
+        io.execute(() -> {
+            int failed = 0;
+            for (Uri u : uris) {
+                if (!saveDoc(u)) failed++;
+            }
+            String js = "window.onDocs && window.onDocs(" + JSONObject.quote(docsJson()) + ","
+                    + (failed == 0 ? "null" : JSONObject.quote(failed == 1
+                        ? "One file couldn't be saved. Only photos, screenshots and PDFs up to 30 MB work."
+                        : failed + " files couldn't be saved. Only photos, screenshots and PDFs up to 30 MB work.")) + ")";
+            runOnUiThread(() -> web.evaluateJavascript(js, null));
+        });
+    }
+
+    /** Copies a picked file into private storage so it stays available offline. */
+    private boolean saveDoc(Uri uri) {
+        String type = getContentResolver().getType(uri);
+        if (type == null || !(type.startsWith("image/") || type.equals("application/pdf"))) {
+            return false;
+        }
+        String name = null;
+        try (Cursor c = getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+                name = c.getString(0);
+            }
+        } catch (Exception ignored) {
+            // Fall back to a generic name.
+        }
+        if (name == null || name.trim().isEmpty()) {
+            name = type.equals("application/pdf") ? "Confirmation.pdf" : "Screenshot.jpg";
+        }
+        name = name.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]", "_").trim();
+        if (type.equals("application/pdf") && !name.toLowerCase().endsWith(".pdf")) {
+            name += ".pdf";
+        }
+        File out = new File(DocsProvider.docsDir(this), System.currentTimeMillis() + "_" + name);
+        long total = 0;
+        try (InputStream in = getContentResolver().openInputStream(uri);
+             OutputStream os = new FileOutputStream(out)) {
+            if (in == null) throw new IOException("no stream");
+            byte[] buf = new byte[65536];
+            int n;
+            while ((n = in.read(buf)) != -1) {
+                total += n;
+                if (total > MAX_DOC_BYTES) throw new IOException("too big");
+                os.write(buf, 0, n);
+            }
+        } catch (Exception e) {
+            out.delete();
+            return false;
+        }
+        return true;
+    }
+
+    private String docsJson() {
+        File[] files = DocsProvider.docsDir(this).listFiles();
+        JSONArray arr = new JSONArray();
+        if (files != null) {
+            Arrays.sort(files, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
+            for (File f : files) {
+                if (!f.isFile()) continue;
+                try {
+                    JSONObject o = new JSONObject();
+                    o.put("id", f.getName());
+                    o.put("name", DocsProvider.displayName(f.getName()));
+                    o.put("type", DocsProvider.typeOf(f.getName()));
+                    o.put("size", f.length());
+                    o.put("time", f.lastModified());
+                    o.put("src", DocsProvider.uriFor(f.getName()).toString());
+                    arr.put(o);
+                } catch (Exception ignored) {
+                    // Skip a file we can't describe.
+                }
+            }
+        }
+        return arr.toString();
+    }
+
+    private void docsMessage(String msg) {
+        String js = "window.onDocs && window.onDocs(null," + JSONObject.quote(msg) + ")";
+        runOnUiThread(() -> web.evaluateJavascript(js, null));
     }
 
     /** Hosts the page may read through getText. */

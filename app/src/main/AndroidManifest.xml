@@ -25,5 +25,11 @@
             android:name=".FlightsActivity"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden"
             android:exported="false" />
+
+        <provider
+            android:name=".DocsProvider"
+            android:authorities="com.londontrip.guide.docs"
+            android:exported="false"
+            android:grantUriPermissions="true" />
     </application>
 </manifest>
