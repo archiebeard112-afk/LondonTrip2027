@@ -639,23 +639,24 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   'use strict';
 
   var HOTEL = 'hub by Premier Inn London Covent Garden, 110 St Martin’s Lane, London WC2N 4BA';
+  var HOTEL_URL = 'https://www.premierinn.com/gb/en/hotels/england/greater-london/london/hub-by-premier-inn-london-covent-garden.html';
 
   // kind: sight | food | pub | travel | show | rest
   // go: how you get to this stop from the one before it: [walk|tube, text]
   // info: History & tips paragraphs
   var DAYS = [
     { t: 'Arrival and Covent Garden', c: '#0019A8',
-      lede: 'Land, check in near Leicester Square, then an easy first evening on foot.',
+      lede: 'An early landing at Terminal 5, early check-in near Leicester Square, then an easy first day on foot.',
       stops: [
-        { time: '1:00 PM', kind: 'travel', title: 'Land at Heathrow', note: 'Clear customs, then follow signs for the Underground.',
-          info: ['Heathrow has four terminals (2, 3, 4 and 5). The Piccadilly line serves all of them; Terminals 2 and 3 share one station.',
+        { time: '9:10 AM', kind: 'travel', title: 'Land at Heathrow', note: 'Terminal 5. Allow about an hour for passport control and bags, then follow signs for the Underground.',
+          info: ['The Piccadilly line starts at Heathrow Terminal 5, so you’ll usually get a seat for your luggage.',
                  'Tap in and out with a contactless card or phone. Each person needs their own, and fares are capped each day.'] },
-        { time: '3:15 PM', kind: 'rest', title: 'Check in at the hotel', note: 'hub by Premier Inn, 110 St Martin’s Lane.',
-          go: ['tube', 'Piccadilly line to Leicester Square, about 50 min (about £5.90)'],
+        { time: '11:15 AM', kind: 'rest', title: 'Check in at the hotel', note: 'hub by Premier Inn, 110 St Martin’s Lane. Early check-in (£15, from 11 AM) gets you into the room straight away; normal check-in is 3 PM.',
+          go: ['tube', 'Piccadilly line from Terminal 5 to Leicester Square, about 55 min (about £5.90)'],
           places: [{ q: HOTEL }],
           info: ['Get off at Leicester Square rather than Covent Garden. It’s closer to the hotel and has escalators, which helps with luggage.',
                  'The Elizabeth line to Tottenham Court Road is faster (about 35 minutes) but costs about £15.50.'] },
-        { time: '4:00 PM', kind: 'sight', title: 'Seven Dials and Covent Garden', note: 'Pastries at Sourdough Sophia or Seven Dials Market, then the street performers in the piazza.',
+        { time: '1:00 PM', kind: 'sight', title: 'Seven Dials and Covent Garden', note: 'Lunch at Seven Dials Market or pastries at Sourdough Sophia, then the street performers in the piazza. Head back for a nap mid-afternoon if the overnight flight catches up with you.',
           go: ['walk', '5 min up St Martin’s Lane'],
           places: [{ l: 'Seven Dials Market', q: 'Seven Dials Market, London' }, { l: 'Sourdough Sophia', q: 'Sourdough Sophia, Covent Garden, London' }],
           info: ['Seven Dials was laid out by Thomas Neale in the 1690s, with a pillar where seven streets meet. The pillar has only six sundials; the column itself is said to be the seventh. Today’s pillar is a 1989 replica.',
@@ -875,19 +876,16 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
                  'The fish pie is the signature dish.'] }
       ] },
     { t: 'Departure', c: '#5C6670',
-      lede: 'Leaving at 10:00 gets you to Heathrow around 11:00, which suits a flight at about 2 PM or later.',
+      lede: 'Leave the hotel by 9:00 to reach Terminal 5 around 10:00, about two hours before BA219 at 12:10 PM.',
       stops: [
-        { time: '8:30 AM', kind: 'food', title: 'Breakfast at The Delaunay', note: 'A full English on Aldwych.',
-          go: ['walk', '10 min'],
-          places: [{ q: 'The Delaunay, Aldwych, London' }],
-          info: ['A grand Viennese-style café opened in 2011 by Chris Corbin and Jeremy King, the pair behind The Wolseley. It’s known for breakfasts and pastries.'] },
-        { time: '9:45 AM', kind: 'rest', title: 'Check out', note: 'hub by Premier Inn, 110 St Martin’s Lane.',
-          go: ['walk', '10 min back'] },
-        { time: '10:00 AM', kind: 'travel', title: 'Piccadilly line to Heathrow', note: 'From Leicester Square, about 50 minutes.',
+        { time: '7:45 AM', kind: 'food', title: 'Breakfast near the hotel', note: 'Keep it quick: the hotel café or a coffee and pastry nearby.',
+          info: ['The Delaunay on Aldwych is a 10 minute walk each way, which is tight before a 9:00 start. Save it for an earlier morning in the week.'] },
+        { time: '8:45 AM', kind: 'rest', title: 'Check out', note: 'hub by Premier Inn, 110 St Martin’s Lane.' },
+        { time: '9:00 AM', kind: 'travel', title: 'Piccadilly line to Heathrow Terminal 5', note: 'From Leicester Square, about 55 minutes. Make sure the train says Heathrow Terminal 5, not Terminal 4.',
           go: ['walk', '3 min to Leicester Square station'],
-          places: [{ l: 'Heathrow', q: 'Heathrow Airport, London' }],
-          info: ['Check your terminal first. Terminals 2 and 3 share one station, and some Terminal 4 trips need a change at Hatton Cross.',
-                 'The Elizabeth line from Tottenham Court Road is faster but costs more. For an international flight, aim to arrive about 3 hours early.'] }
+          places: [{ l: 'Heathrow Terminal 5', q: 'Heathrow Terminal 5, London' }],
+          info: ['Piccadilly line trains to Heathrow split: some go to Terminal 4, others to Terminals 2 & 3 and Terminal 5. Check the front of the train or the platform board.',
+                 'BA bag drop closes 60 minutes before departure, so be at Terminal 5 by about 10:30 at the latest.'] }
       ] }
   ];
 
@@ -896,7 +894,8 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
     sky: 'https://www.skyscanner.com/transport/flights/den/lhr/270219/270228/?adultsv2=2&cabinclass=economy&rtn=1&currency=USD&preferdirects=true&stops=!oneStop,!twoPlusStops'
   };
   var BOOKINGS = [
-    { id: 'flights', t: 'Round-trip flights', d: 'DEN \u21C4 LHR \u00B7 Feb 19\u201328 \u00B7 2 adults', u: FLIGHTS.google },
+    { id: 'flights', t: 'Round-trip flights', d: 'BA218 Feb 19, 5:01 PM DEN \u2192 9:10 AM LHR T5 \u00B7 BA219 Feb 28, 12:10 PM LHR \u2192 3:10 PM DEN \u00B7 1 checked bag (23 kg) each way', u: FLIGHTS.google, pre: true },
+    { id: 'hotel', t: 'hub by Premier Inn Covent Garden', d: 'Sat Feb 20\u2013Sun Feb 28, 8 nights \u00B7 Advance rate, refundable until about Jan 23 \u00B7 add early check-in (\u00A315, from 11 AM)', u: HOTEL_URL },
     { id: 'rowan', t: 'Rowan Live', d: 'Wed Feb 24, 7:30 PM \u00B7 Gillian Lynne Theatre', pre: true },
     { id: 'tower', t: 'Tower of London tickets', d: 'Mon Feb 22 \u00B7 confirm 2027 winter hours', u: 'https://www.hrp.org.uk/tower-of-london/visit/tickets-and-prices/' },
     { id: 'murano', t: 'Caf\u00e9 Murano', d: 'Mon Feb 22, 6:30 PM \u00B7 call 020 7240 3654 (no longer on OpenTable)', u: 'tel:+442072403654' },
@@ -910,7 +909,8 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   var BOOK_BY_TITLE = {
     'Tower of London': 'tower', 'Dinner at Caf\u00e9 Murano': 'murano', 'Westminster Abbey': 'abbey',
     'Pre-theatre dinner at Rules': 'rules', 'Dinner at Hawksmoor Seven Dials': 'hawks', 'Dinner at Tayyabs': 'tayyabs',
-    'Jack the Ripper tour': 'ripper', 'Farewell dinner at J Sheekey': 'sheekey', 'Rowan Live': 'rowan'
+    'Jack the Ripper tour': 'ripper', 'Farewell dinner at J Sheekey': 'sheekey', 'Rowan Live': 'rowan',
+    'Check in at the hotel': 'hotel'
   };
   function bookingFor(s) {
     var id = BOOK_BY_TITLE[s.title];
@@ -990,6 +990,8 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
   var done = load('ldn.done2', {});
   var booked = load('ldn.book', null);
   if (!booked) { booked = {}; BOOKINGS.forEach(function (b) { if (b.pre) booked[b.id] = true; }); }
+  // The BA flights were booked on 2026-11-22: tick them once for anyone who had the app already.
+  if (!load('ldn.mig.flights', false)) { booked.flights = true; save('ldn.book', booked); save('ldn.mig.flights', true); }
   var openInfo = {};
   var current = 0;
   var strip = document.getElementById('strip');
@@ -1197,7 +1199,10 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
 
   // Booked flight details: entered when the flights are ticked off.
   // { out: { flight, departs, arrives }, back: { ... } }, times as 24-hour "HH:MM".
-  var myFlights = load('ldn.flights', null);
+  var myFlights = load('ldn.flights', null) || {
+    out: { flight: 'BA218', departs: '17:01', arrives: '09:10' },
+    back: { flight: 'BA219', departs: '12:10', arrives: '15:10' }
+  };
   function clock(hhmm) {
     var m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || '');
     if (!m) return null;
@@ -1539,6 +1544,9 @@ main.in-right { animation: slideFromLeft 0.22s ease-out; }
       { id: 'eta', t: 'UK ETA for each of you', d: '£20 each on the UK ETA app or gov.uk. Usually approved within a day, but allow 3 working days.', u: 'https://www.gov.uk/eta/apply' },
       { id: 'insure', t: 'Travel insurance', d: 'Check it covers medical care abroad.' },
       { id: 'confirm', t: 'Confirmations saved on your phone', d: 'Screenshot the flights, hotel, Rowan Live tickets and timed entry tickets in case there’s no signal.' }
+    ]],
+    ['Hotel', [
+      { id: 'earlyci', t: 'Add early check-in', d: '\u00A315 to check in from 11 AM on Sat Feb 20. You land at 9:10 AM, so it saves waiting until 3 PM. Add it on premierinn.com under your booking.', u: HOTEL_URL }
     ]],
     ['Money and phone', [
       { id: 'card', t: 'Contactless card or phone for each of you', d: 'Tap in and out on the Tube. Each person needs their own. A card with no foreign transaction fees saves about 3%.' },
